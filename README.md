@@ -23,3 +23,4 @@ Não existe servidor Express separado.
 ## Documentação
 - [Estrutura de pastas](docs/estrutura.md)
 - [Arquitetura](docs/arquitetura.md)
+- [Modelagem de dados (diagrama ER)](docs/modelagem.md)
