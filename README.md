@@ -2,8 +2,24 @@
 
 Sistema de gestão de transporte universitário.
 
+Aplicação **full stack em Next.js** (App Router): a interface usa **React** como
+biblioteca e a API vive no mesmo projeto, em Route Handlers dentro de `app/api/`.
+Não existe servidor Express separado.
+
 ## Como rodar
-1. Node 24 (`nvm use`)
-2. `npm install` na raiz
-3. Copie `frontend/.env.example` para `frontend/.env.local`
-4. `npm run dev` (API em :3333, front em :3000)
+1. Node 22+ (Next 16 exige >= 20.9; se você usa nvm, `nvm use` lê o `.nvmrc`)
+2. `npm install`
+3. Copie `.env.example` para `.env.local`
+4. `npm run dev` (aplicação em http://localhost:3000, API em http://localhost:3000/api)
+
+## Scripts
+| Script | O que faz |
+| --- | --- |
+| `npm run dev` | Sobe o servidor de desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm start` | Sobe o build de produção |
+| `npm run lint` | ESLint |
+
+## Documentação
+- [Estrutura de pastas](docs/estrutura.md)
+- [Arquitetura](docs/arquitetura.md)
