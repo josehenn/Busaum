@@ -340,6 +340,9 @@ unitário cobrindo o caso de sucesso e o de erro.
   dia da semana, menos os que declararam ausência, mais os avulsos que declararam que
   vão. Não existe linha em `Declaracao` para quem não declarou nada: em dia contratado,
   **ausência de registro significa que o aluno vai**.
+- **Declarar é opcional e nunca muda a conta.** O aluno pode avisar que não vai, avisar
+  que só usa um trecho, ou simplesmente não avisar nada — o valor é o mesmo. A
+  declaração existe para a operação, não para a cobrança.
 - **Qual plano vale para uma viagem** — o que estava vigente no instante do
   `Viagem.prazoDeclaracao` daquela viagem. Não é o plano de hoje, nem o do primeiro dia
   do mês: é uma pergunta por viagem.
@@ -359,7 +362,8 @@ unitário cobrindo o caso de sucesso e o de erro.
 ### Fechamento
 
 - **Uma diária por dia, não por trecho.** A `Diaria` aponta para a `Viagem` do dia, que
-  já contém ida e volta. Usar só a ida custa o mesmo que usar as duas.
+  já contém ida e volta. Usar só a ida, só a volta ou as duas custa exatamente o mesmo —
+  e não usar nenhuma das duas, sem justificativa aprovada, também.
 - **Apuração** — para cada aluno `ATIVO`, listar os dias previstos da competência
   resolvendo cada um contra o plano vigente naquele dia, mais os dias avulsos aceitos.
   Cada dia vira uma `Diaria` com uma cópia de `valorDiaria`. `COBRADA` por padrão;
@@ -384,6 +388,17 @@ unitário cobrindo o caso de sucesso e o de erro.
 sentido: uma `Rota` tem `horarioIda` e `horarioVolta`, e a `Viagem` é o dia inteiro. Se
 ida e volta fossem rotas distintas, o aluno teria dois planos e pagaria duas diárias por
 dia — e a lotação seria contada duas vezes para a mesma pessoa.
+
+**A volta é a ida ao contrário.** A `ordem` do `RotaPonto` descreve o trajeto de ida, e
+a volta percorre a mesma lista de trás para frente. Por isso uma única `ordem` basta, e
+por isso o embarque da volta é o `pontoDestinoId`: o aluno entra onde desceu de manhã.
+Se um dia a volta precisar de um caminho próprio, o lugar de mexer é `RotaPonto`, que
+ganharia uma `ordemVolta` — nada mais no modelo depende disso.
+
+**Usar meio dia custa um dia inteiro.** O aluno pode usar só a ida ou só a volta, e paga
+a diária cheia. `usaIda` e `usaVolta` existem para o motorista saber quem esperar e para
+dimensionar o veículo, não para calcular preço — declarar é sempre opcional, e quem não
+declara conta como presente.
 
 **O retorno é opcional no plano, não copiado.** O padrão é descer onde subiu, então
 `pontoRetornoId` nulo *significa* `pontoEmbarqueId`. Guardar uma cópia funcionaria até
@@ -483,20 +498,19 @@ ainda não aconteceram. A cobrança é sempre do mês anterior.
 
 ## Pontos em aberto
 
-1. **A volta faz o caminho inverso da ida?** O modelo assume que sim: a `ordem` do
-   `RotaPonto` descreve a ida, e a volta é ela ao contrário. Se o trajeto de volta for
-   diferente de verdade, `RotaPonto` ganha uma `ordemVolta`.
-2. **O aluno embarca na volta sempre no destino?** Assumido que sim. Se alguém pode
-   entrar em outro ponto no caminho de volta, entra um quarto ponto no plano.
-3. **Qual o dia de vencimento da mensalidade?** A competência fecha depois do fim do mês;
+1. **Qual o dia de vencimento da mensalidade?** A competência fecha depois do fim do mês;
    falta definir o prazo de pagamento (dia 10 do mês seguinte, por exemplo).
-4. **Aluno que fica `INATIVO` no meio do mês** paga os dias até a inativação ou o mês
+2. **Aluno que fica `INATIVO` no meio do mês** paga os dias até a inativação ou o mês
    inteiro? O modelo comporta os dois, o fechamento precisa escolher.
-5. **Existe limite para trocar de plano?** O dinheiro está protegido pelo corte no
+3. **Existe limite para trocar de plano?** O dinheiro está protegido pelo corte no
    `prazoDeclaracao`, então a troca livre não gera prejuízo. O incômodo é operacional:
    quem muda de dias toda semana bagunça o dimensionamento da frota.
-6. **Veículo menor no dia.** A lotação é travada contra a capacidade do veículo padrão;
+4. **Veículo menor no dia.** A lotação é travada contra a capacidade do veículo padrão;
    se a viagem for feita por uma van menor, dá overbooking. Sobra decidir se isso vira
    alerta para o admin ou se é aceitável.
-7. **Viagens geradas até quando?** A geração precisa de um gatilho (job, ou sob demanda
+5. **Viagens geradas até quando?** A geração precisa de um gatilho (job, ou sob demanda
    ao abrir a agenda) e de um horizonte — sugestão: as próximas duas semanas.
+6. **O que faz o aluno avisar?** Como o aviso não muda o valor, ninguém é obrigado a
+   dar. Só que é dele que saem o dimensionamento da frota e o pular ponto — as duas
+   funções operacionais do sistema. Não é questão de schema, é de produto: vale pensar
+   se a tela cobra o aviso de alguma forma, ou se esses números nascem imprecisos.
