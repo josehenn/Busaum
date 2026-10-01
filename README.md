@@ -10,7 +10,8 @@ Não existe servidor Express separado.
 1. Node 22+ (Next 16 exige >= 20.9; se você usa nvm, `nvm use` lê o `.nvmrc`)
 2. `npm install`
 3. Copie `.env.example` para `.env.local`
-4. `npm run dev` (aplicação em http://localhost:3000, API em http://localhost:3000/api)
+4. `docker compose up -d` (sobe o PostgreSQL 18 com os bancos `busaum_dev` e `busaum_test`)
+5. `npm run dev` (aplicação em http://localhost:3000, API em http://localhost:3000/api)
 
 ## Scripts
 | Script | O que faz |
