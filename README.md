@@ -965,11 +965,11 @@ O vídeo apresenta:
 
 # 👨‍💻 Equipe
 
-| Integrante | Responsabilidade |
+| Integrante | Responsabilidade || GitHub |
 |---|---|
-| **Ivan Nerilo** | Desenvolvimento |
-| **José Augusto Henn** | Desenvolvimento |
-| **Josué Borges** | Desenvolvimento |
+| **Ivan Nerilo** | Desenvolvimento || https://github.com/ivannerilo |
+| **José Augusto Henn** | Desenvolvimento || https://github.com/josehenn |
+| **Josué Borges** | Desenvolvimento || https://github.com/josue-borges |
 
 Projeto desenvolvido para a disciplina de **Programação 4**.
 
