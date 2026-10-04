@@ -1,9 +1,6 @@
-import Link from "next/link";
-import { KeyRoundIcon, LogOutIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { sairDaSessao } from "@/app/login/actions";
 import type { UsuarioSessao } from "@/server/sessao/sessao.service";
 import { Marca } from "./marca";
+import { MenuConta } from "./menu-conta";
 import { MenuMobile } from "./menu-mobile";
 import { NavLinks } from "./nav-links";
 import { nomeDaArea, type Area } from "./navegacao";
@@ -33,27 +30,8 @@ export function AreaLogada({
         <header className="flex h-14 items-center gap-2 border-b px-4">
           <MenuMobile area={area} />
           <span className="text-sm text-muted-foreground">{nomeDaArea[area]}</span>
-          <div className="ml-auto flex items-center gap-3">
-            <div className="hidden text-right leading-tight sm:block">
-              <p className="text-sm font-medium">{usuario.nome}</p>
-              <p className="text-xs text-muted-foreground">{usuario.email}</p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link href="/conta/senha" />}
-              title="Trocar senha"
-            >
-              <KeyRoundIcon />
-              <span className="hidden sm:inline">Senha</span>
-            </Button>
-            <form action={sairDaSessao}>
-              <Button type="submit" variant="outline" size="sm">
-                <LogOutIcon />
-                Sair
-              </Button>
-            </form>
+          <div className="ml-auto">
+            <MenuConta nome={usuario.nome} email={usuario.email} />
           </div>
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>

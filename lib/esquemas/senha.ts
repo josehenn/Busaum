@@ -42,5 +42,16 @@ export const trocarSenhaSchema = z
     path: ["novaSenha"],
   });
 
+/**
+ * Primeira senha (quem entrou com a provisória): não pede a atual — a pessoa
+ * acabou de digitá-la no login, e só chega aqui com essa sessão.
+ */
+export const definirPrimeiraSenhaSchema = z
+  .object({ novaSenha: senhaNova, confirmacao: confirmacaoSenha })
+  .refine((dados) => dados.novaSenha === dados.confirmacao, {
+    message: "As senhas não conferem.",
+    path: ["confirmacao"],
+  });
+
 export type EntrarDTO = z.output<typeof entrarSchema>;
 export type TrocarSenhaDTO = z.output<typeof trocarSenhaSchema>;

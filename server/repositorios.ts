@@ -2,6 +2,7 @@
 // Prisma. Os index.ts dos módulos montam seus services a partir daqui — assim um
 // service pode depender do repositório de outro módulo sem ciclo de import.
 import { prisma } from "@/lib/prisma";
+import { PrismaAdministradorRepository } from "./administradores/prisma-administrador.repository";
 import { PrismaAlunoRepository } from "./alunos/prisma-aluno.repository";
 import { PrismaConviteRepository } from "./convites/prisma-convite.repository";
 import { PrismaDeclaracaoRepository } from "./declaracoes/prisma-declaracao.repository";
@@ -16,6 +17,7 @@ import { PrismaVeiculoRepository } from "./veiculos/prisma-veiculo.repository";
 import { PrismaViagemRepository } from "./viagens/prisma-viagem.repository";
 
 export const repositorios = {
+  administradores: new PrismaAdministradorRepository(prisma),
   alunos: new PrismaAlunoRepository(prisma),
   convites: new PrismaConviteRepository(prisma),
   declaracoes: new PrismaDeclaracaoRepository(prisma),

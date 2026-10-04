@@ -5,7 +5,7 @@ import { hojeLocal } from "@/lib/datas";
 import { alunoService, type AlunoEdicaoDTO } from "@/server/alunos";
 import { ErroNaoEncontrado } from "@/server/comum/erros";
 import { instituicaoService } from "@/server/instituicoes";
-import { BotaoRedefinirSenha } from "../_componentes/botao-redefinir-senha";
+import { BotaoRedefinirSenha } from "@/components/formulario/botao-redefinir-senha";
 import { FormularioAluno } from "../_componentes/formulario-aluno";
 import { PerfilUsuario } from "@/lib/generated/prisma/enums";
 import { exigirPerfil } from "@/server/sessao/sessao.service";
@@ -30,7 +30,7 @@ export default async function EditarAluno({ params }: PageProps<"/admin/alunos/[
       <CabecalhoPagina
         titulo={aluno.nome}
         descricao={`${aluno.curso} · ${aluno.instituicao.sigla ?? aluno.instituicao.nome}`}
-        acoes={<BotaoRedefinirSenha alunoId={aluno.id} email={aluno.email} />}
+        acoes={<BotaoRedefinirSenha url={`/api/alunos/${aluno.id}/senha`} email={aluno.email} />}
       />
       <FormularioAluno
         aluno={aluno}

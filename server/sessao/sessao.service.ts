@@ -13,8 +13,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { definirPrimeiraSenhaSchema } from "@/lib/esquemas/senha";
 import { auth } from "@/server/auth/auth";
+import { definirPrimeiraSenha } from "@/server/auth/contas";
+import { hashSenha } from "@/server/auth/credenciais";
 import { ErroDeAcesso, ErroNaoAutenticado } from "@/server/comum/erros";
+import { validar } from "@/server/comum/validacao";
 
 export type UsuarioSessao = {
   id: string;
@@ -25,6 +29,8 @@ export type UsuarioSessao = {
   trocarSenha: boolean;
   /** Preenchido quando o perfil é ALUNO. */
   alunoId: string | null;
+  /** Sessão desta requisição (para manter só ela ao trocar a senha). */
+  sessaoId: string;
 };
 
 export const ROTA_TROCAR_SENHA = "/conta/senha";
@@ -42,6 +48,8 @@ export const obterUsuarioAtual = cache(async (): Promise<UsuarioSessao | null> =
   if (!sessao) return null;
 
   const { user } = sessao;
+  // Desativar já apaga as sessões; isto cobre a corrida com uma requisição em voo.
+  if (user.ativo === false) return null;
   const aluno =
     user.perfil === PerfilUsuario.ALUNO
       ? await prisma.aluno.findUnique({ where: { usuarioId: user.id }, select: { id: true } })
@@ -54,8 +62,24 @@ export const obterUsuarioAtual = cache(async (): Promise<UsuarioSessao | null> =
     perfil: user.perfil as PerfilUsuario,
     trocarSenha: Boolean(user.trocarSenha),
     alunoId: aluno?.id ?? null,
+    sessaoId: sessao.session.id,
   };
 });
+
+/**
+ * Primeira senha de quem entrou com a provisória. Só vale nesse estado: quem já
+ * tem a própria senha troca pelo /api/auth/change-password, informando a atual.
+ */
+export async function definirPrimeiraSenhaDoUsuario(entrada: unknown) {
+  const usuario = await obterUsuarioAtual();
+  if (!usuario) throw new ErroNaoAutenticado("Entre no sistema para continuar.");
+  if (!usuario.trocarSenha) {
+    throw new ErroDeAcesso("Sua senha já foi criada. Para trocá-la, informe a senha atual.");
+  }
+  const { novaSenha } = validar(definirPrimeiraSenhaSchema, entrada);
+  await definirPrimeiraSenha(prisma, usuario.id, await hashSenha(novaSenha), usuario.sessaoId);
+  return { destino: areaDoPerfil(usuario.perfil) };
+}
 
 /**
  * Para layouts e páginas. Sem sessão → /login; com senha provisória → troca de

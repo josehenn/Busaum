@@ -96,6 +96,9 @@ model Usuario {
   // Senha provisória (criada pelo admin ou redefinida): o acesso fica restrito
   // à troca de senha até o usuário escolher a dele.
   trocarSenha     Boolean       @default(false)
+  // Desativado não entra mais (as sessões abertas caem). Não apaga: o usuário
+  // continua no histórico (criadoPor, decisões de justificativas...).
+  ativo           Boolean       @default(true)
   criadoEm        DateTime      @default(now())
   atualizadoEm    DateTime      @updatedAt
 

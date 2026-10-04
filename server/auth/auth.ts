@@ -6,7 +6,7 @@
 // este arquivo direto.
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "@/lib/prisma";
 import { LIMITES_SENHA } from "@/lib/esquemas/senha";
@@ -49,6 +49,28 @@ export const auth = betterAuth({
     additionalFields: {
       perfil: { type: ["ADMIN", "ALUNO"], required: true, input: false },
       trocarSenha: { type: "boolean", required: false, defaultValue: false, input: false },
+      ativo: { type: "boolean", required: false, defaultValue: true, input: false },
+    },
+  },
+
+  databaseHooks: {
+    session: {
+      create: {
+        // Usuário desativado não abre sessão, mesmo acertando a senha. A tela
+        // mostra a mesma mensagem de senha errada (não revela que a conta existe).
+        before: async (sessao) => {
+          const usuario = await prisma.usuario.findUnique({
+            where: { id: sessao.userId },
+            select: { ativo: true },
+          });
+          if (!usuario?.ativo) {
+            throw new APIError("UNAUTHORIZED", {
+              message: "Invalid email or password",
+              code: "INVALID_EMAIL_OR_PASSWORD",
+            });
+          }
+        },
+      },
     },
   },
 

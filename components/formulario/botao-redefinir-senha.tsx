@@ -17,15 +17,28 @@ import {
 } from "@/components/ui/dialog";
 import { enviarJson } from "@/lib/api";
 
-/** Aluno esqueceu a senha: gera uma provisória nova e mostra uma única vez. */
-export function BotaoRedefinirSenha({ alunoId, email }: { alunoId: string; email: string }) {
+/**
+ * Usuário esqueceu a senha: gera uma provisória nova e mostra uma única vez.
+ * `url` é o endpoint POST que redefine (aluno ou administrador).
+ */
+export function BotaoRedefinirSenha({
+  url,
+  email,
+  tamanho = "sm",
+  variante = "outline",
+}: {
+  url: string;
+  email: string;
+  tamanho?: "sm" | "xs";
+  variante?: "outline" | "ghost";
+}) {
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [senha, setSenha] = useState<string | null>(null);
 
   async function redefinir() {
     setEnviando(true);
-    const resultado = await enviarJson<{ senhaProvisoria: string }>(`/api/alunos/${alunoId}/senha`, "POST");
+    const resultado = await enviarJson<{ senhaProvisoria: string }>(url, "POST");
     setEnviando(false);
     if (!resultado.ok) {
       toast.error(resultado.erro);
@@ -38,15 +51,15 @@ export function BotaoRedefinirSenha({ alunoId, email }: { alunoId: string; email
   return (
     <>
       <Dialog open={confirmando} onOpenChange={setConfirmando}>
-        <DialogTrigger render={<Button variant="outline" size="sm" />}>
+        <DialogTrigger render={<Button variant={variante} size={tamanho} />}>
           <KeyRoundIcon />
           Redefinir senha
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Redefinir a senha do aluno?</DialogTitle>
+            <DialogTitle>Redefinir a senha de {email}?</DialogTitle>
             <DialogDescription>
-              A senha atual deixa de funcionar e o aluno é desconectado de todos os aparelhos. Ele
+              A senha atual deixa de funcionar e a pessoa é desconectada de todos os aparelhos. Ela
               entra com a provisória e escolhe uma nova.
             </DialogDescription>
           </DialogHeader>
@@ -66,7 +79,7 @@ export function BotaoRedefinirSenha({ alunoId, email }: { alunoId: string; email
           titulo="Nova senha provisória"
           descricao={
             <>
-              Repasse ao aluno (<strong>{email}</strong>). No próximo acesso ele cria a própria senha.
+              Repasse para <strong>{email}</strong>. No próximo acesso a pessoa cria a própria senha.
             </>
           }
           rotulo="Senha provisória"

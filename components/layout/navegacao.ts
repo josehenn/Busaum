@@ -6,6 +6,7 @@ import {
   MapPinIcon,
   ReceiptIcon,
   RouteIcon,
+  ShieldCheckIcon,
   UsersIcon,
   WalletIcon,
   type LucideIcon,
@@ -30,6 +31,7 @@ export const navegacao: Record<Area, ItemNavegacao[]> = {
     { href: "/admin/justificativas", rotulo: "Justificativas", icone: FileCheckIcon },
     { href: "/admin/mensalidades", rotulo: "Mensalidades", icone: WalletIcon },
     { href: "/admin/despesas", rotulo: "Despesas", icone: ReceiptIcon },
+    { href: "/admin/administradores", rotulo: "Administradores", icone: ShieldCheckIcon },
   ],
   aluno: [
     { href: "/aluno", rotulo: "Início", icone: LayoutDashboardIcon },

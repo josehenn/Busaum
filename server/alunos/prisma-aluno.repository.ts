@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient } from "@/lib/generated/prisma/client";
 import { PerfilUsuario } from "@/lib/generated/prisma/enums";
 import type { FiltroAlunos } from "@/lib/esquemas/aluno";
-import { PROVEDOR_SENHA } from "@/server/auth/credenciais";
+import { criarUsuarioComSenha, redefinirSenhaDoUsuario } from "@/server/auth/contas";
 import { ErroDeConflito } from "@/server/comum/erros";
 import type {
   Aluno,
@@ -65,16 +65,8 @@ export class PrismaAlunoRepository implements IAlunoRepository {
     }
   }
 
-  async redefinirSenha(usuarioId: string, senhaHash: string) {
-    await this.prisma.$transaction([
-      this.prisma.conta.updateMany({
-        where: { usuarioId, providerId: PROVEDOR_SENHA },
-        data: { senha: senhaHash },
-      }),
-      this.prisma.usuario.update({ where: { id: usuarioId }, data: { trocarSenha: true } }),
-      // Derruba todas as sessões: quem estava logado com a senha antiga sai.
-      this.prisma.sessao.deleteMany({ where: { usuarioId } }),
-    ]);
+  redefinirSenha(usuarioId: string, senhaHash: string) {
+    return redefinirSenhaDoUsuario(this.prisma, usuarioId, senhaHash);
   }
 
   async atualizar(
@@ -115,12 +107,12 @@ export async function criarAlunoComLogin(
   tx: Prisma.TransactionClient,
   { nome, email, instituicaoId, senhaHash, trocarSenha, ...dados }: DadosCriarAluno,
 ) {
-  const usuario = await tx.usuario.create({
-    data: { nome, email, perfil: PerfilUsuario.ALUNO, trocarSenha },
-  });
-  // accountId = id do usuário: é como o Better Auth acha a conta de senha.
-  await tx.conta.create({
-    data: { usuarioId: usuario.id, accountId: usuario.id, providerId: PROVEDOR_SENHA, senha: senhaHash },
+  const usuario = await criarUsuarioComSenha(tx, {
+    nome,
+    email,
+    perfil: PerfilUsuario.ALUNO,
+    senhaHash,
+    trocarSenha,
   });
   return tx.aluno.create({
     data: {
