@@ -63,7 +63,7 @@ export async function listarUsuariosParaEntrada() {
       nome: true,
       email: true,
       perfil: true,
-      aluno: { select: { curso: true, status: true, instituicao: { select: { sigla: true } } } },
+      aluno: { select: { curso: true, status: true, instituicao: { select: { sigla: true, nome: true } } } },
     },
     orderBy: [{ perfil: "asc" }, { nome: "asc" }],
   });

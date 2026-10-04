@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Instituicao" ALTER COLUMN "sigla" DROP NOT NULL,
+ALTER COLUMN "cidade" DROP NOT NULL;

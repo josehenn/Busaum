@@ -100,10 +100,12 @@ model Usuario {
 }
 
 model Instituicao {
+  // Sigla e cidade são opcionais: a instituição pode nascer só com o nome,
+  // digitado livremente no cadastro do aluno.
   id           String   @id @default(cuid())
   nome         String   @unique
-  sigla        String
-  cidade       String
+  sigla        String?
+  cidade       String?
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
@@ -117,7 +119,7 @@ model Aluno {
   instituicaoId String
   cpf           String      @unique // sensível (LGPD)
   telefone      String // sensível (LGPD)
-  matricula     String
+  matricula     String?
   curso         String
   turno         Turno
   status        StatusAluno @default(ATIVO)

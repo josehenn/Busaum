@@ -5,16 +5,11 @@ import { Marca } from "@/components/layout/marca";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PerfilUsuario, StatusAluno } from "@/lib/generated/prisma/enums";
+import { rotuloStatusAluno } from "@/lib/rotulos";
 import { listarUsuariosParaEntrada } from "@/server/sessao/sessao.service";
 import { entrarComo } from "./actions";
 
 export const metadata: Metadata = { title: "Entrar" };
-
-const rotuloStatus: Record<StatusAluno, string> = {
-  ATIVO: "Ativo",
-  INATIVO: "Inativo",
-  TRANCADO: "Trancado",
-};
 
 export default async function Login() {
   // A lista vem do banco: sem isto o build pré-renderiza a página com os usuários
@@ -64,8 +59,8 @@ export default async function Login() {
                   key={u.id}
                   id={u.id}
                   nome={u.nome}
-                  detalhe={u.aluno ? `${u.aluno.curso} · ${u.aluno.instituicao.sigla}` : u.email}
-                  status={u.aluno && u.aluno.status !== StatusAluno.ATIVO ? rotuloStatus[u.aluno.status] : undefined}
+                  detalhe={u.aluno ? `${u.aluno.curso} · ${u.aluno.instituicao.sigla ?? u.aluno.instituicao.nome}` : u.email}
+                  status={u.aluno && u.aluno.status !== StatusAluno.ATIVO ? rotuloStatusAluno[u.aluno.status] : undefined}
                 />
               ))}
             </section>

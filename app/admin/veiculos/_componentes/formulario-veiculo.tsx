@@ -1,15 +1,13 @@
 "use client";
 
-// Formulário de cadastro e edição.
-//
-// Validação em duas camadas, com as MESMAS regras (lib/esquemas/veiculo.ts):
-// - na tela: ao sair de cada campo e ao enviar; com erro, nada é enviado;
-// - no servidor: o service valida de novo (a API pode ser chamada sem a tela) e
-//   é o único que sabe o que depende do banco, como placa já cadastrada.
+// Formulário de cadastro e edição. A validação na tela usa o mesmo schema do
+// service (lib/esquemas/veiculo.ts); placa já cadastrada só o servidor sabe.
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { SelectSimples } from "@/components/formulario/select-simples";
+import { useFormulario } from "@/components/formulario/use-formulario";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -19,15 +17,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { enviarJson } from "@/lib/api";
-import { errosDoSchema, type ErrosPorCampo } from "@/lib/esquemas/erros";
 import {
   atualizarVeiculoSchema,
   criarVeiculoSchema,
@@ -46,85 +36,48 @@ type VeiculoInicial = {
   status: StatusVeiculo;
 };
 
-type Valores = {
-  placa: string;
-  tipo: string;
-  modelo: string;
-  capacidade: string;
-  status: string;
-};
-type Campo = keyof Valores;
-
 const opcoesTipo = opcoes(rotuloTipoVeiculo);
 const opcoesStatus = opcoes(rotuloStatusVeiculo);
-
-/** Converte o estado da tela no corpo que a API espera. */
-function paraCorpo(valores: Valores, editando: boolean) {
-  return {
-    placa: valores.placa,
-    tipo: valores.tipo || undefined,
-    modelo: valores.modelo,
-    capacidade: valores.capacidade === "" ? undefined : Number(valores.capacidade),
-    ...(editando && { status: valores.status || undefined }),
-  };
-}
 
 export function FormularioVeiculo({ veiculo }: { veiculo?: VeiculoInicial }) {
   const router = useRouter();
   const editando = Boolean(veiculo);
-
-  const [valores, setValores] = useState<Valores>({
-    placa: veiculo?.placa ?? "",
-    tipo: veiculo?.tipo ?? "",
-    modelo: veiculo?.modelo ?? "",
-    capacidade: veiculo ? String(veiculo.capacidade) : "",
-    status: veiculo?.status ?? "",
-  });
-  const [tocados, setTocados] = useState<Partial<Record<Campo, boolean>>>({});
-  const [tentouEnviar, setTentouEnviar] = useState(false);
-  const [errosServidor, setErrosServidor] = useState<ErrosPorCampo>({});
   const [enviando, setEnviando] = useState(false);
 
-  const corpo = paraCorpo(valores, editando);
-  const errosTela = errosDoSchema(editando ? atualizarVeiculoSchema : criarVeiculoSchema, corpo);
-
-  function atualizar(campo: Campo, valor: string) {
-    setValores((atuais) => ({ ...atuais, [campo]: valor }));
-    // O erro que veio do servidor era sobre o valor antigo.
-    setErrosServidor((atuais) => {
-      const proximos = { ...atuais };
-      delete proximos[campo];
-      return proximos;
-    });
-  }
-
-  function tocar(campo: Campo) {
-    setTocados((atuais) => ({ ...atuais, [campo]: true }));
-  }
-
-  /** Erro da tela só aparece depois que o usuário passou pelo campo (ou tentou enviar). */
-  function erroDe(campo: Campo) {
-    const daTela = tentouEnviar || tocados[campo] ? errosTela[campo] : undefined;
-    return (daTela ?? errosServidor[campo])?.map((message) => ({ message }));
-  }
-  const invalido = (campo: Campo) => Boolean(erroDe(campo)?.length);
+  const form = useFormulario({
+    inicial: {
+      placa: veiculo?.placa ?? "",
+      tipo: veiculo?.tipo ?? "",
+      modelo: veiculo?.modelo ?? "",
+      capacidade: veiculo ? String(veiculo.capacidade) : "",
+      status: veiculo?.status ?? "",
+    },
+    schema: editando ? atualizarVeiculoSchema : criarVeiculoSchema,
+    paraCorpo: (v) => ({
+      placa: v.placa,
+      tipo: v.tipo || undefined,
+      modelo: v.modelo,
+      capacidade: v.capacidade === "" ? undefined : Number(v.capacidade),
+      ...(editando && { status: v.status || undefined }),
+    }),
+  });
+  const { valores, atualizar, tocar, erroDe, invalido } = form;
 
   async function enviar(evento: React.FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    setTentouEnviar(true);
-    if (Object.keys(errosTela).length > 0) {
+    if (!form.podeEnviar()) {
       toast.error("Revise os campos destacados.");
       return;
     }
 
     setEnviando(true);
     const resultado = veiculo
-      ? await enviarJson(`/api/veiculos/${veiculo.id}`, "PATCH", corpo)
-      : await enviarJson("/api/veiculos", "POST", corpo);
+      ? await enviarJson(`/api/veiculos/${veiculo.id}`, "PATCH", form.corpo)
+      : await enviarJson("/api/veiculos", "POST", form.corpo);
     setEnviando(false);
 
     if (!resultado.ok) {
-      setErrosServidor(resultado.campos);
+      form.definirErrosServidor(resultado.campos);
       toast.error(resultado.erro);
       return;
     }
@@ -166,30 +119,18 @@ export function FormularioVeiculo({ veiculo }: { veiculo?: VeiculoInicial }) {
             <FieldLabel htmlFor="tipo" obrigatorio>
               Tipo
             </FieldLabel>
-            <Select
-              items={opcoesTipo}
-              value={valores.tipo || null}
-              onValueChange={(valor) => {
-                atualizar("tipo", valor ?? "");
+            <SelectSimples
+              id="tipo"
+              opcoes={opcoesTipo}
+              valor={valores.tipo}
+              aoMudar={(v) => {
+                atualizar("tipo", v);
                 tocar("tipo");
               }}
-            >
-              <SelectTrigger
-                id="tipo"
-                className="w-full"
-                aria-required
-                aria-invalid={invalido("tipo")}
-              >
-                <SelectValue placeholder="Escolha o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {opcoesTipo.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Escolha o tipo"
+              invalido={invalido("tipo")}
+              obrigatorio
+            />
             <FieldError errors={erroDe("tipo")} />
           </Field>
         </div>
@@ -238,30 +179,17 @@ export function FormularioVeiculo({ veiculo }: { veiculo?: VeiculoInicial }) {
               <FieldLabel htmlFor="status" obrigatorio>
                 Status
               </FieldLabel>
-              <Select
-                items={opcoesStatus}
-                value={valores.status || null}
-                onValueChange={(valor) => {
-                  atualizar("status", valor ?? "");
+              <SelectSimples
+                id="status"
+                opcoes={opcoesStatus}
+                valor={valores.status}
+                aoMudar={(v) => {
+                  atualizar("status", v);
                   tocar("status");
                 }}
-              >
-                <SelectTrigger
-                  id="status"
-                  className="w-full"
-                  aria-required
-                  aria-invalid={invalido("status")}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {opcoesStatus.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                invalido={invalido("status")}
+                obrigatorio
+              />
               <FieldError errors={erroDe("status")} />
             </Field>
           )}

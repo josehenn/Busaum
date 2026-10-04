@@ -1,6 +1,18 @@
 // Textos dos enums para exibição. Fica em lib/ (e não em server/) porque os
 // Client Components também precisam deles, nos selects dos formulários.
-import { StatusVeiculo, TipoVeiculo } from "@/lib/generated/prisma/enums";
+import { StatusAluno, StatusVeiculo, TipoVeiculo, Turno } from "@/lib/generated/prisma/enums";
+
+export const rotuloTurno: Record<Turno, string> = {
+  [Turno.MATUTINO]: "Matutino",
+  [Turno.VESPERTINO]: "Vespertino",
+  [Turno.NOTURNO]: "Noturno",
+};
+
+export const rotuloStatusAluno: Record<StatusAluno, string> = {
+  [StatusAluno.ATIVO]: "Ativo",
+  [StatusAluno.INATIVO]: "Inativo",
+  [StatusAluno.TRANCADO]: "Trancado",
+};
 
 export const rotuloTipoVeiculo: Record<TipoVeiculo, string> = {
   [TipoVeiculo.ONIBUS]: "Ônibus",

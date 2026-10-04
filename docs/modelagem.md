@@ -82,8 +82,8 @@ erDiagram
     Instituicao {
         String id PK
         String nome UK
-        String sigla
-        String cidade
+        String sigla "nullable"
+        String cidade "nullable"
         DateTime criadoEm
         DateTime atualizadoEm
     }
@@ -94,7 +94,7 @@ erDiagram
         String instituicaoId FK
         String cpf UK "sensível"
         String telefone "sensível"
-        String matricula "nº na instituição"
+        String matricula "nullable, nº na instituição"
         String curso
         Turno turno
         StatusAluno status
@@ -473,6 +473,12 @@ dessa lista.
 da UNISUL" e para "Posto Ipiranga da BR-101" antes de alguém ter o CEP em mãos; exigir
 endereço completo faria o admin inventar dado para conseguir salvar. Coordenadas ficam
 nullable pelo mesmo motivo — e já deixam o caminho aberto para um mapa depois.
+
+**Instituição pode nascer só com o nome.** No cadastro do aluno, a instituição é um
+campo de texto livre com sugestões das já cadastradas: se o texto bate com o nome ou a
+sigla de uma existente (sem diferenciar maiúsculas), o aluno é vinculado a ela; senão,
+uma nova é criada na mesma transação. Por isso `sigla` e `cidade` são opcionais —
+exigir os dois faria o admin inventar dado para conseguir salvar o aluno.
 
 **A instituição é do ponto, não da rota.** Um ponto que é campus sabe de quem é; um
 abrigo de esquina não precisa saber. Assim uma rota que passa por duas faculdades da

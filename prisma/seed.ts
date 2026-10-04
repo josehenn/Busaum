@@ -261,33 +261,33 @@ async function main() {
 
   const ana = await criarAluno({
     nome: "Ana Souza", email: "ana.souza@aluno.busaum.dev", cpfBase: "529982247",
-    telefone: "(48) 99101-0001", matricula: "URS2023001", curso: "Direito",
+    telefone: "48991010001", matricula: "URS2023001", curso: "Direito",
     turno: Turno.NOTURNO, instituicaoId: urs.id,
   });
   const bruno = await criarAluno({
     nome: "Bruno Lima", email: "bruno.lima@aluno.busaum.dev", cpfBase: "111444777",
-    telefone: "(48) 99101-0002", matricula: "URS2022045", curso: "Engenharia Civil",
+    telefone: "48991010002", matricula: "URS2022045", curso: "Engenharia Civil",
     turno: Turno.NOTURNO, instituicaoId: urs.id,
   });
   const carla = await criarAluno({
     nome: "Carla Mendes", email: "carla.mendes@aluno.busaum.dev", cpfBase: "390533447",
-    telefone: "(48) 99101-0003", matricula: "URS2024012", curso: "Psicologia",
+    telefone: "48991010003", matricula: "URS2024012", curso: "Psicologia",
     turno: Turno.NOTURNO, instituicaoId: urs.id,
   });
   const diego = await criarAluno({
     nome: "Diego Ramos", email: "diego.ramos@aluno.busaum.dev", cpfBase: "714602380",
-    telefone: "(48) 99101-0004", matricula: "IFCL2024108", curso: "Técnico em Informática",
+    telefone: "48991010004", matricula: "IFCL2024108", curso: "Técnico em Informática",
     turno: Turno.MATUTINO, instituicaoId: ifcl.id,
   });
   const eduarda = await criarAluno({
     nome: "Eduarda Costa", email: "eduarda.costa@aluno.busaum.dev", cpfBase: "245876190",
-    telefone: "(48) 99101-0005", matricula: "IFCL2023077", curso: "Licenciatura em Química",
+    telefone: "48991010005", matricula: "IFCL2023077", curso: "Licenciatura em Química",
     turno: Turno.MATUTINO, instituicaoId: ifcl.id,
   });
   // Inativo e sem plano: aparece no cadastro, fica fora da apuração.
   await criarAluno({
     nome: "Felipe Rocha", email: "felipe.rocha@aluno.busaum.dev", cpfBase: "863015472",
-    telefone: "(48) 99101-0006", matricula: "URS2021230", curso: "Administração",
+    telefone: "48991010006", matricula: "URS2021230", curso: "Administração",
     turno: Turno.NOTURNO, instituicaoId: urs.id, status: StatusAluno.INATIVO,
   });
 

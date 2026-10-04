@@ -86,6 +86,9 @@ Regras do padrão:
   - na tela, ao sair de cada campo e ao enviar — com erro, nada é enviado;
   - no service (`validar(schema, entrada)`), porque a API pode ser chamada sem a
     tela. Só o servidor valida o que depende do banco (placa já cadastrada).
+- **Formulários usam `useFormulario`** (`components/formulario/`): estado, erros
+  ao sair do campo/enviar, erros da API por campo. Selects usam `SelectSimples`.
+  Documentos e telefones guardam só dígitos; a máscara é da tela (`lib/mascaras.ts`).
 - **Inputs limitam o que dá para digitar**: `maxLength` com os valores de
   `LIMITES_*` do schema, máscara de caracteres (placa só letras/números, capacidade
   só dígitos). Campo obrigatório tem `<FieldLabel obrigatorio>` (asterisco vermelho)
