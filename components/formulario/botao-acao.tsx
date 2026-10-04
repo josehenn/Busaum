@@ -25,7 +25,6 @@ type Confirmacao = {
   titulo: string;
   descricao?: string;
   rotuloConfirmar?: string;
-  /** Campo de texto no diálogo; o valor vai no corpo com a chave `nome`. */
   campoTexto?: { nome: string; rotulo: string; obrigatorio?: boolean; max?: number };
   destrutiva?: boolean;
 };
@@ -78,7 +77,6 @@ export function BotaoAcao({
       return;
     }
 
-    // O servidor pode detalhar o que aconteceu (ex.: "mensalidade recalculada").
     toast.success(resultado.dados?.mensagem ?? mensagemSucesso);
     setAberto(false);
     setTexto("");
