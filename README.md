@@ -967,9 +967,9 @@ O vídeo apresenta:
 
 | Integrante | Responsabilidade |
 |---|---|
-| **José Borges** | Desenvolvimento |
-| **Ivan** | Desenvolvimento |
-| **[Nome do integrante]** | Desenvolvimento |
+| **Ivan Nerilo** | Desenvolvimento |
+| **José Augusto Henn** | Desenvolvimento |
+| **Josué Borges** | Desenvolvimento |
 
 Projeto desenvolvido para a disciplina de **Programação 4**.
 
