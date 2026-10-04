@@ -966,7 +966,7 @@ O vídeo apresenta:
 # 👨‍💻 Equipe
 
 | Integrante | Responsabilidade || GitHub |
-|---|---|
+|---|---||---|
 | **Ivan Nerilo** | Desenvolvimento || https://github.com/ivannerilo |
 | **José Augusto Henn** | Desenvolvimento || https://github.com/josehenn |
 | **Josué Borges** | Desenvolvimento || https://github.com/josue-borges |
