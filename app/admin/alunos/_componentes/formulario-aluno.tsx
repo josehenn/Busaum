@@ -6,7 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CampoAutocomplete } from "@/components/formulario/campo-autocomplete";
+import { SelectComCadastro } from "@/components/formulario/select-com-cadastro";
 import { SelectSimples } from "@/components/formulario/select-simples";
 import { useFormulario } from "@/components/formulario/use-formulario";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { enviarJson } from "@/lib/api";
 import { atualizarAlunoSchema, criarAlunoSchema, LIMITES_ALUNO } from "@/lib/esquemas/aluno";
+import { LIMITES_INSTITUICAO } from "@/lib/esquemas/instituicao";
 import { StatusAluno, type Turno } from "@/lib/generated/prisma/enums";
 import { formatarCpf, formatarTelefone } from "@/lib/mascaras";
 import { opcoes, rotuloStatusAluno, rotuloTurno } from "@/lib/rotulos";
+
+type Instituicao = { id: string; nome: string; sigla: string | null };
+
+const rotuloInstituicao = (i: Instituicao) => (i.sigla ? `${i.sigla} — ${i.nome}` : i.nome);
 
 type AlunoInicial = {
   id: string;
@@ -32,7 +37,7 @@ type AlunoInicial = {
   email: string;
   cpfMascarado: string;
   telefone: string;
-  instituicao: { nome: string };
+  instituicao: { id: string };
   matricula: string | null;
   curso: string;
   turno: Turno;
@@ -49,14 +54,14 @@ export function FormularioAluno({
   hoje,
 }: {
   aluno?: AlunoInicial;
-  instituicoes: { nome: string; sigla: string | null }[];
+  instituicoes: Instituicao[];
   /** "AAAA-MM-DD" de hoje em Brasília, calculado no servidor. */
   hoje: string;
 }) {
   const router = useRouter();
   const editando = Boolean(aluno);
   const [enviando, setEnviando] = useState(false);
-  const sugestoesInstituicao = instituicoes.map((i) => ({ valor: i.nome, detalhe: i.sigla ?? undefined }));
+  const opcoesInstituicao = instituicoes.map((i) => ({ value: i.id, label: rotuloInstituicao(i) }));
 
   const form = useFormulario({
     inicial: {
@@ -64,7 +69,7 @@ export function FormularioAluno({
       email: aluno?.email ?? "",
       cpf: "",
       telefone: aluno ? formatarTelefone(aluno.telefone) : "",
-      instituicao: aluno?.instituicao.nome ?? "",
+      instituicaoId: aluno?.instituicao.id ?? "",
       matricula: aluno?.matricula ?? "",
       curso: aluno?.curso ?? "",
       turno: aluno?.turno ?? "",
@@ -77,7 +82,7 @@ export function FormularioAluno({
       email: v.email,
       ...(!editando && { cpf: v.cpf }),
       telefone: v.telefone,
-      instituicao: v.instituicao,
+      instituicaoId: v.instituicaoId || undefined,
       matricula: v.matricula,
       curso: v.curso,
       turno: v.turno || undefined,
@@ -86,16 +91,6 @@ export function FormularioAluno({
     }),
   });
   const { valores, atualizar, tocar, erroDe, invalido } = form;
-
-  // Mesmo critério do service (buscarPorNomeOuSigla): nome ou sigla iguais, sem
-  // diferenciar maiúsculas. Acento conta — "Sao" e "São" são instituições diferentes.
-  const igual = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
-  const instituicaoNova =
-    valores.instituicao.trim().length > 0 &&
-    !instituicoes.some(
-      (i) =>
-        igual(i.nome, valores.instituicao) || (i.sigla !== null && igual(i.sigla, valores.instituicao)),
-    );
 
   const vaiSairDeAtivo =
     aluno?.status === StatusAluno.ATIVO && valores.status !== "" && valores.status !== StatusAluno.ATIVO;
@@ -218,27 +213,31 @@ export function FormularioAluno({
         <FieldSet>
           <FieldLegend>Vínculo acadêmico</FieldLegend>
           <FieldGroup>
-            <Field data-invalid={invalido("instituicao")}>
-              <FieldLabel htmlFor="instituicao" obrigatorio>
+            <Field data-invalid={invalido("instituicaoId")}>
+              <FieldLabel htmlFor="instituicaoId" obrigatorio>
                 Instituição
               </FieldLabel>
-              <CampoAutocomplete
-                id="instituicao"
-                sugestoes={sugestoesInstituicao}
-                valor={valores.instituicao}
-                aoMudar={(v) => atualizar("instituicao", v)}
-                aoSair={() => tocar("instituicao")}
-                placeholder="Digite ou escolha da lista"
-                maxLength={LIMITES_ALUNO.instituicaoMax}
-                invalido={invalido("instituicao")}
+              <SelectComCadastro<Instituicao>
+                id="instituicaoId"
+                opcoes={opcoesInstituicao}
+                valor={valores.instituicaoId}
+                aoMudar={(v) => {
+                  atualizar("instituicaoId", v);
+                  tocar("instituicaoId");
+                }}
+                placeholder="Escolha a instituição"
+                invalido={invalido("instituicaoId")}
                 obrigatorio
+                cadastro={{
+                  titulo: "Nova instituição",
+                  descricao: "Não está na lista? Cadastre pelo nome e ela já fica selecionada.",
+                  rotulo: "Nome da instituição",
+                  url: "/api/instituicoes",
+                  max: LIMITES_INSTITUICAO.nomeMax,
+                  paraOpcao: (i) => ({ value: i.id, label: rotuloInstituicao(i) }),
+                }}
               />
-              {instituicaoNova && !invalido("instituicao") && (
-                <FieldDescription>
-                  Instituição nova: será cadastrada ao salvar o aluno.
-                </FieldDescription>
-              )}
-              <FieldError errors={erroDe("instituicao")} />
+              <FieldError errors={erroDe("instituicaoId")} />
             </Field>
 
             <div className="grid gap-6 sm:grid-cols-2">

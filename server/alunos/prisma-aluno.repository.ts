@@ -7,7 +7,6 @@ import type {
   DadosAtualizarAluno,
   DadosCriarAluno,
   IAlunoRepository,
-  ReferenciaInstituicao,
 } from "./aluno.repository";
 
 const incluir = {
@@ -57,14 +56,13 @@ export class PrismaAlunoRepository implements IAlunoRepository {
     return aluno?.id ?? null;
   }
 
-  async criar({ nome, email, instituicao, ...dados }: DadosCriarAluno) {
+  async criar({ nome, email, instituicaoId, ...dados }: DadosCriarAluno) {
     try {
-      // Escrita aninhada: o Prisma cria usuário, aluno e (se for o caso) a
-      // instituição na mesma transação.
+      // Escrita aninhada: o Prisma cria usuário e aluno na mesma transação.
       return await this.prisma.aluno.create({
         data: {
           ...dados,
-          instituicao: vincularInstituicao(instituicao),
+          instituicao: { connect: { id: instituicaoId } },
           usuario: { create: { nome, email, perfil: PerfilUsuario.ALUNO } },
         },
         include: incluir,
@@ -76,7 +74,7 @@ export class PrismaAlunoRepository implements IAlunoRepository {
 
   async atualizar(
     id: string,
-    { nome, email, instituicao, ...dados }: DadosAtualizarAluno,
+    { nome, email, instituicaoId, ...dados }: DadosAtualizarAluno,
     opcoes: { encerrarPlanosEm?: Date } = {},
   ) {
     try {
@@ -91,7 +89,7 @@ export class PrismaAlunoRepository implements IAlunoRepository {
           where: { id },
           data: {
             ...dados,
-            ...(instituicao && { instituicao: vincularInstituicao(instituicao) }),
+            ...(instituicaoId && { instituicao: { connect: { id: instituicaoId } } }),
             ...((nome || email) && { usuario: { update: { nome, email } } }),
           },
           include: incluir,
@@ -101,21 +99,6 @@ export class PrismaAlunoRepository implements IAlunoRepository {
       throw traduzirDuplicidade(erro);
     }
   }
-}
-
-/**
- * Por id: conecta à existente. Por nome: conecta se alguém criou com esse nome
- * exato nesse meio-tempo; senão cria — tudo dentro da escrita do aluno.
- */
-function vincularInstituicao(referencia: ReferenciaInstituicao) {
-  return "id" in referencia
-    ? { connect: { id: referencia.id } }
-    : {
-        connectOrCreate: {
-          where: { nome: referencia.nome },
-          create: { nome: referencia.nome },
-        },
-      };
 }
 
 /**

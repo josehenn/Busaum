@@ -78,6 +78,9 @@ function cpf(base: string) {
 
 // ---------------------------------------------------------------- Seed
 
+/** Anexo das justificativas de exemplo: arquivo estático em public/, sem dado real. */
+const ANEXO_EXEMPLO = "/exemplos/comprovante-exemplo.pdf";
+
 async function limpar() {
   // Ordem inversa das dependências.
   await prisma.diaria.deleteMany();
@@ -402,7 +405,7 @@ async function main() {
         create: {
           motivo: MotivoJustificativa.ATESTADO,
           descricao: "Consulta médica com afastamento de um dia.",
-          anexoUrl: "/uploads/seed/atestado-ana.pdf",
+          anexoUrl: ANEXO_EXEMPLO,
           status: StatusJustificativa.APROVADA,
           observacaoDecisao: "Atestado conferido.",
           decididoPor: admin.id,
@@ -449,7 +452,7 @@ async function main() {
         create: {
           motivo: MotivoJustificativa.OUTRO,
           descricao: "Compromisso pessoal.",
-          anexoUrl: "/uploads/seed/declaracao-eduarda.pdf",
+          anexoUrl: ANEXO_EXEMPLO,
           status: StatusJustificativa.RECUSADA,
           observacaoDecisao: "Motivo não se enquadra nas regras de isenção.",
           decididoPor: admin.id,
@@ -472,7 +475,7 @@ async function main() {
         create: {
           motivo: MotivoJustificativa.AULA_CANCELADA,
           descricao: "O professor cancelou a aula pelo sistema acadêmico.",
-          anexoUrl: "/uploads/seed/aviso-cancelamento-diego.pdf",
+          anexoUrl: ANEXO_EXEMPLO,
         },
       },
     },

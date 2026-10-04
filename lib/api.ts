@@ -15,12 +15,25 @@ export async function enviarJson<T>(
   metodo: "POST" | "PATCH" | "PUT" | "DELETE",
   corpo?: unknown,
 ): Promise<ResultadoApi<T>> {
+  return enviar<T>(url, {
+    method: metodo,
+    headers: { "Content-Type": "application/json" },
+    body: corpo === undefined ? undefined : JSON.stringify(corpo),
+  });
+}
+
+/** Para formulários com arquivo: multipart/form-data (o navegador monta o cabeçalho). */
+export async function enviarFormulario<T>(
+  url: string,
+  metodo: "POST" | "PATCH",
+  dados: FormData,
+): Promise<ResultadoApi<T>> {
+  return enviar<T>(url, { method: metodo, body: dados });
+}
+
+async function enviar<T>(url: string, init: RequestInit): Promise<ResultadoApi<T>> {
   try {
-    const resposta = await fetch(url, {
-      method: metodo,
-      headers: { "Content-Type": "application/json" },
-      body: corpo === undefined ? undefined : JSON.stringify(corpo),
-    });
+    const resposta = await fetch(url, init);
     const json = await resposta.json().catch(() => null);
 
     if (resposta.ok) return { ok: true, dados: json as T };

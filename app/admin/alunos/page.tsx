@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PencilIcon, PlusIcon } from "lucide-react";
+import { FiltroLista } from "@/components/formulario/filtro-lista";
 import { CabecalhoPagina } from "@/components/layout/cabecalho-pagina";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,9 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { filtroAlunosSchema } from "@/lib/esquemas/aluno";
-import { rotuloTurno } from "@/lib/rotulos";
+import { opcoes, rotuloStatusAluno, rotuloTurno } from "@/lib/rotulos";
 import { alunoService } from "@/server/alunos";
-import { FiltroAlunos } from "./_componentes/filtro-alunos";
 import { StatusAlunoBadge } from "./_componentes/status-aluno";
 
 export const metadata: Metadata = { title: "Alunos" };
@@ -37,7 +37,12 @@ export default async function Alunos({ searchParams }: PageProps<"/admin/alunos"
         }
       />
 
-      <FiltroAlunos busca={filtro.busca} status={filtro.status} />
+      <FiltroLista
+        placeholder="Buscar por nome, e-mail ou matrícula"
+        opcoesStatus={opcoes(rotuloStatusAluno)}
+        busca={filtro.busca}
+        status={filtro.status}
+      />
 
       <div className="rounded-lg border">
         <Table>

@@ -2,7 +2,7 @@
 // instituições), ambos injetados pelo construtor.
 import { StatusAluno } from "@/lib/generated/prisma/enums";
 import type { ErrosPorCampo } from "@/lib/esquemas/erros";
-import { ErroDeConflito, ErroNaoEncontrado } from "@/server/comum/erros";
+import { ErroDeConflito, ErroDeValidacao, ErroNaoEncontrado } from "@/server/comum/erros";
 import { validar } from "@/server/comum/validacao";
 import type { IInstituicaoRepository } from "@/server/instituicoes/instituicao.repository";
 import {
@@ -14,7 +14,7 @@ import {
   type AlunoDTO,
   type AlunoEdicaoDTO,
 } from "./aluno.dto";
-import type { Aluno, IAlunoRepository, ReferenciaInstituicao } from "./aluno.repository";
+import type { Aluno, IAlunoRepository } from "./aluno.repository";
 
 export class AlunoService {
   constructor(
@@ -38,27 +38,25 @@ export class AlunoService {
 
   async criar(entrada: unknown, criadoPor: string): Promise<AlunoDTO> {
     const dados = validar(criarAlunoSchema, entrada);
-    const instituicao = await this.resolverInstituicao(dados.instituicao);
-
+    await this.garantirInstituicao(dados.instituicaoId);
     await this.garantirUnicidade({
       email: dados.email,
       cpf: dados.cpf,
-      // Instituição nova ainda não tem alunos: não há matrícula para colidir.
-      instituicaoId: "id" in instituicao ? instituicao.id : undefined,
+      instituicaoId: dados.instituicaoId,
       matricula: dados.matricula ?? undefined,
     });
 
-    return paraAlunoDTO(await this.alunos.criar({ ...dados, instituicao, criadoPor }));
+    return paraAlunoDTO(await this.alunos.criar({ ...dados, criadoPor }));
   }
 
   async atualizar(id: string, entrada: unknown): Promise<AlunoDTO> {
     const atual = await this.obter(id);
     const dados = validar(atualizarAlunoSchema, entrada);
 
-    const instituicao = dados.instituicao
-      ? await this.resolverInstituicao(dados.instituicao)
-      : { id: atual.instituicaoId };
-    const instituicaoId = "id" in instituicao ? instituicao.id : undefined;
+    if (dados.instituicaoId && dados.instituicaoId !== atual.instituicaoId) {
+      await this.garantirInstituicao(dados.instituicaoId);
+    }
+    const instituicaoId = dados.instituicaoId ?? atual.instituicaoId;
     // undefined = não veio no PATCH (mantém); null = apagou a matrícula.
     const matricula = dados.matricula !== undefined ? dados.matricula : atual.matricula;
     const mudouMatricula =
@@ -81,11 +79,9 @@ export class AlunoService {
       dados.status !== StatusAluno.ATIVO &&
       atual.status === StatusAluno.ATIVO;
 
-    const atualizado = await this.alunos.atualizar(
-      id,
-      { ...dados, instituicao: instituicaoId === atual.instituicaoId ? undefined : instituicao },
-      { encerrarPlanosEm: saiuDeAtivo ? new Date() : undefined },
-    );
+    const atualizado = await this.alunos.atualizar(id, dados, {
+      encerrarPlanosEm: saiuDeAtivo ? new Date() : undefined,
+    });
     return paraAlunoDTO(atualizado);
   }
 
@@ -97,15 +93,12 @@ export class AlunoService {
     return aluno;
   }
 
-  /**
-   * O campo instituição é texto livre. Se bate com o nome ou a sigla de uma já
-   * cadastrada (sem diferenciar maiúsculas), vincula a ela — "urs" e
-   * "Universidade Regional do Sul" são a mesma. Senão, é uma instituição nova,
-   * criada pelo repositório na mesma transação do aluno.
-   */
-  private async resolverInstituicao(texto: string): Promise<ReferenciaInstituicao> {
-    const existente = await this.instituicoes.buscarPorNomeOuSigla(texto);
-    return existente ? { id: existente.id } : { nome: texto };
+  private async garantirInstituicao(id: string) {
+    if (!(await this.instituicoes.buscarPorId(id))) {
+      throw new ErroDeValidacao("Instituição não encontrada.", {
+        instituicaoId: ["Escolha uma instituição da lista."],
+      });
+    }
   }
 
   /**

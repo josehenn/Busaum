@@ -20,17 +20,8 @@ export type Aluno = {
   instituicao: { id: string; nome: string; sigla: string | null };
 };
 
-/** Instituição já cadastrada (id) ou nova, a ser criada junto com o aluno (nome). */
-export type ReferenciaInstituicao = { id: string } | { nome: string };
-
-/** Dados como o repositório recebe: a instituição já resolvida pelo service. */
-export type DadosCriarAluno = Omit<CriarAlunoDTO, "instituicao"> & {
-  instituicao: ReferenciaInstituicao;
-  criadoPor: string;
-};
-export type DadosAtualizarAluno = Omit<AtualizarAlunoDTO, "instituicao"> & {
-  instituicao?: ReferenciaInstituicao;
-};
+export type DadosCriarAluno = CriarAlunoDTO & { criadoPor: string };
+export type DadosAtualizarAluno = AtualizarAlunoDTO;
 
 export interface IAlunoRepository {
   listar(filtro: FiltroAlunos): Promise<Aluno[]>;
@@ -39,10 +30,7 @@ export interface IAlunoRepository {
   idDoUsuarioComEmail(email: string): Promise<string | null>;
   idDoAlunoComCpf(cpf: string): Promise<string | null>;
   idDoAlunoComMatricula(instituicaoId: string, matricula: string): Promise<string | null>;
-  /**
-   * Cria, numa única transação, o usuário de login (perfil ALUNO), o aluno e —
-   * se a referência for por nome — a instituição nova.
-   */
+  /** Cria, numa única transação, o usuário de login (perfil ALUNO) e o aluno. */
   criar(dados: DadosCriarAluno): Promise<Aluno>;
   /**
    * Atualiza aluno e usuário. Com `encerrarPlanosEm`, fecha na mesma transação os

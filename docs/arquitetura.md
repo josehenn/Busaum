@@ -108,8 +108,24 @@ Regras do padrão:
 
 | Padrão | Onde | Para quê |
 | --- | --- | --- |
+| MVC (adaptado ao App Router) | Model: `prisma/schema.prisma` + entidades dos repositórios · View: `app/**/page.tsx`, `components/` · Controller: `app/api/**/route.ts` | Separar dados, apresentação e entrada HTTP |
 | Singleton | `lib/prisma.ts` | Uma única conexão com o banco, mesmo com o hot reload do dev |
-| Repository | `server/*/*.repository.ts` + `prisma-*.repository.ts` | Service depende de interface, não do Prisma |
-| Injeção de dependência | Construtor dos services; montagem em `server/*/index.ts` | Trocar implementação (ex.: repositório em memória) sem tocar na regra |
-| DTO | `server/*/*.dto.ts` | Contrato de entrada e saída; controla o que é exposto |
-| Adapter / Strategy | `StorageService`, `PaymentGateway` (módulos de Justificativas e Mensalidades) | Disco local × Vercel Blob; gateway fake × real |
+| Repository | `server/*/*.repository.ts` (interface) + `prisma-*.repository.ts` | Service depende de interface, não do Prisma |
+| Injeção de dependência / Composition root | Construtor dos services; `server/repositorios.ts` instancia os repositórios e cada `server/*/index.ts` monta seu service | Trocar implementação sem tocar na regra; um service usa o repositório de outro módulo sem ciclo de import |
+| DTO | `lib/esquemas/*.ts` (entrada, Zod) e `server/*/*.dto.ts` / tipos `*DTO` (saída) | Contrato de entrada e saída; controla o que é exposto (LGPD) |
+| Adapter | `server/arquivos/`: `IStorageService` → `LocalStorageService` (dev) e `VercelBlobStorageService` (produção) | Guardar anexos sem o sistema saber onde |
+| Strategy | `server/pagamentos/`: `PaymentGateway` → `FakePaymentGateway` | Trocar o provedor de pagamento sem mudar a regra de mensalidade |
+| Middleware (de requisição) | `manipulador()` em `server/comum/http.ts` envolve todo Route Handler; `exigirPerfil*` na sessão | Tradução de erros e autorização em um lugar só |
+
+## Regras de domínio centralizadas
+
+Algumas regras são usadas por vários módulos e moram em **funções puras**, sem
+banco, para existir uma resposta só:
+
+| Regra | Onde | Quem usa |
+| --- | --- | --- |
+| Quem é esperado numa viagem; plano vigente no prazo; pontos a pular | `server/viagens/esperados.ts` | Viagens (lista do motorista), Declarações (vaga do avulso), Justificativas, Mensalidades |
+| Ocupação por dia da semana | `server/planos/ocupacao.ts` | Planos (trava de lotação), Rotas (troca de veículo) |
+| Apuração da competência | `server/mensalidades/apuracao.ts` | Fechamento do mês |
+| Datas no fuso de Brasília | `lib/datas.ts` | Todos |
+| Dinheiro em centavos | `lib/dinheiro.ts` | Rotas, Mensalidades, Despesas |

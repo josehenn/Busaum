@@ -15,9 +15,19 @@ o React renderiza as telas e os Route Handlers do Next expõem a API.
 │   ├── ui/               # Componentes do shadcn/ui (gerados; ajuste com cuidado)
 │   └── layout/           # Casca das áreas, menu, cabeçalho de página
 ├── server/               # Camada de servidor: regras de negócio por módulo
+│   ├── repositorios.ts   # Instancia todos os repositórios (composition root)
+│   ├── comum/            # Erros de domínio, validação, tradução para HTTP
 │   ├── sessao/           # Sessão de demonstração (no lugar do Auth)
-│   └── hello/hello.service.ts
+│   ├── arquivos/         # StorageService (local / Vercel Blob)
+│   ├── pagamentos/       # PaymentGateway (fake)
+│   └── <modulo>/         # veiculos, alunos, instituicoes, pontos, rotas, planos,
+│                         # viagens, declaracoes, justificativas, mensalidades,
+│                         # despesas, transparencia
 ├── lib/                  # Utilidades compartilhadas (client + server)
+│   ├── esquemas/         # Schemas Zod de entrada (tela e service usam os mesmos)
+│   ├── datas.ts          # Fuso de Brasília, competência, dias da semana
+│   ├── dinheiro.ts       # Reais em centavos, máscara de digitação
+│   └── rotulos.ts        # Textos dos enums
 ├── public/               # Arquivos estáticos servidos em /
 ├── tests/                # Testes
 ├── docs/                 # Documentação

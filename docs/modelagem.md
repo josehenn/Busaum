@@ -474,11 +474,12 @@ da UNISUL" e para "Posto Ipiranga da BR-101" antes de alguém ter o CEP em mãos
 endereço completo faria o admin inventar dado para conseguir salvar. Coordenadas ficam
 nullable pelo mesmo motivo — e já deixam o caminho aberto para um mapa depois.
 
-**Instituição pode nascer só com o nome.** No cadastro do aluno, a instituição é um
-campo de texto livre com sugestões das já cadastradas: se o texto bate com o nome ou a
-sigla de uma existente (sem diferenciar maiúsculas), o aluno é vinculado a ela; senão,
-uma nova é criada na mesma transação. Por isso `sigla` e `cidade` são opcionais —
-exigir os dois faria o admin inventar dado para conseguir salvar o aluno.
+**Instituição pode nascer só com o nome.** Nos formulários de aluno e de ponto, a
+instituição é escolhida numa lista — sem texto livre no campo. Se ela não existe, um
+botão ao lado do campo abre um modal que cadastra só pelo nome e já a deixa
+selecionada. O cadastro recusa nome que bata com o nome ou a sigla de uma existente
+(sem diferenciar maiúsculas), para não duplicar "URS" e "Universidade Regional do
+Sul". Por isso `sigla` e `cidade` são opcionais.
 
 **A instituição é do ponto, não da rota.** Um ponto que é campus sabe de quem é; um
 abrigo de esquina não precisa saber. Assim uma rota que passa por duas faculdades da
@@ -502,21 +503,37 @@ implementar o cartão de autenticação.
 A competência só fecha **depois** do fim do mês, porque antes disso os dias previstos
 ainda não aconteceram. A cobrança é sempre do mês anterior.
 
-## Pontos em aberto
+## Decisões tomadas na implementação
 
-1. **Qual o dia de vencimento da mensalidade?** A competência fecha depois do fim do mês;
-   falta definir o prazo de pagamento (dia 10 do mês seguinte, por exemplo).
-2. **Aluno que fica `INATIVO` no meio do mês** paga os dias até a inativação ou o mês
-   inteiro? O modelo comporta os dois, o fechamento precisa escolher.
-3. **Existe limite para trocar de plano?** O dinheiro está protegido pelo corte no
-   `prazoDeclaracao`, então a troca livre não gera prejuízo. O incômodo é operacional:
-   quem muda de dias toda semana bagunça o dimensionamento da frota.
-4. **Veículo menor no dia.** A lotação é travada contra a capacidade do veículo padrão;
-   se a viagem for feita por uma van menor, dá overbooking. Sobra decidir se isso vira
-   alerta para o admin ou se é aceitável.
-5. **Viagens geradas até quando?** A geração precisa de um gatilho (job, ou sob demanda
-   ao abrir a agenda) e de um horizonte — sugestão: as próximas duas semanas.
-6. **O que faz o aluno avisar?** Como o aviso não muda o valor, ninguém é obrigado a
-   dar. Só que é dele que saem o dimensionamento da frota e o pular ponto — as duas
-   funções operacionais do sistema. Não é questão de schema, é de produto: vale pensar
-   se a tela cobra o aviso de alguma forma, ou se esses números nascem imprecisos.
+Os pontos que estavam em aberto foram decididos assim:
+
+1. **Vencimento:** dia 10 do mês seguinte à competência, às 23:59 (Brasília).
+   Mensalidade em aberto depois disso vira `VENCIDA` (atualizado ao listar).
+2. **Aluno inativado no meio do mês:** paga os dias até a inativação. Inativar ou
+   trancar o aluno encerra os planos em vigor no mesmo instante, e a apuração só
+   cobra dias com plano vigente.
+3. **Limite para trocar de plano:** nenhum. O corte no `prazoDeclaracao` protege o
+   dinheiro; a troca é feita pela administração.
+4. **Veículo menor no dia:** a troca do veículo de uma viagem é aceita (a viagem
+   precisa sair), mas a viagem fica marcada como **acima da capacidade** na agenda
+   e no detalhe, para o admin agir.
+5. **Geração de viagens:** sob demanda, ao abrir a agenda do admin ou as viagens do
+   aluno, para os próximos 14 dias — idempotente pelo `@@unique(rotaId, data)`. O
+   fechamento do mês gera as que faltarem no mês inteiro antes de apurar. Mudar
+   horário, dias, veículo ou prazo da rota refaz as viagens futuras ainda sem
+   nenhum registro.
+6. **Incentivo ao aviso:** a tela do aluno lista as próximas viagens com um botão
+   por viagem ("Vou / Só ida / Só volta / Não vou"), e mostra o prazo de cada uma.
+
+Outras decisões:
+
+- **Avulso exige plano na rota.** A declaração não guarda pontos; o avulso usa os
+  pontos do plano que o aluno tem na mesma rota (em outros dias).
+- **Justificativa aprovada depois do fechamento:** se a mensalidade ainda não foi
+  paga, a diária vira `ISENTA_JUSTIFICADA` e os totais são recalculados na hora;
+  se já foi paga, o sistema orienta um ajuste negativo no mês seguinte.
+- **Janela para justificar:** até 60 dias depois da viagem.
+- **Anexos não têm URL pública.** Ficam no `StorageService` (disco local ou Vercel
+  Blob privado) e são servidos por `/api/arquivos/...`, que confere a sessão:
+  admin vê todos, aluno só os das próprias justificativas. A página de
+  transparência não mostra comprovantes de despesa.

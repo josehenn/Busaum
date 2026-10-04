@@ -11,3 +11,6 @@ next-env.d.ts
 .vercel
 
 /lib/generated/prisma
+
+# Anexos enviados em desenvolvimento (LocalStorageService)
+/uploads

@@ -2,13 +2,12 @@
 import { z } from "zod";
 import { StatusAluno, Turno } from "@/lib/generated/prisma/enums";
 import { apenasDigitos } from "@/lib/mascaras";
+import { dataObrigatoria, idObrigatorio, textoObrigatorio } from "./comum";
 
 export const LIMITES_ALUNO = {
   nomeMin: 3,
   nomeMax: 120,
   emailMax: 120,
-  instituicaoMin: 2,
-  instituicaoMax: 120,
   matriculaMax: 30,
   cursoMin: 2,
   cursoMax: 80,
@@ -28,19 +27,8 @@ export function cpfValido(cpf: string) {
   return true;
 }
 
-/** Texto obrigatório com limites; vazio dá só "Informe ...", sem somar mensagens. */
-function texto(rotulo: string, min: number, max: number, artigo = "o") {
-  return z
-    .string({ error: `Informe ${artigo} ${rotulo}.` })
-    .trim()
-    .min(1, { error: `Informe ${artigo} ${rotulo}.`, abort: true })
-    .min(min, `${capitalizar(artigo)} ${rotulo} precisa ter ao menos ${min} caracteres.`)
-    .max(max, `${capitalizar(artigo)} ${rotulo} pode ter no máximo ${max} caracteres.`);
-}
-const capitalizar = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
-const nome = texto("nome", LIMITES_ALUNO.nomeMin, LIMITES_ALUNO.nomeMax);
-const curso = texto("curso", LIMITES_ALUNO.cursoMin, LIMITES_ALUNO.cursoMax);
+const nome = textoObrigatorio("nome", LIMITES_ALUNO.nomeMin, LIMITES_ALUNO.nomeMax);
+const curso = textoObrigatorio("curso", LIMITES_ALUNO.cursoMin, LIMITES_ALUNO.cursoMax);
 /**
  * Opcional: nem todo aluno tem a matrícula em mãos no cadastro. Vazio vira null
  * (sem matrícula); no PATCH, ausente = não mexe, "" = apaga.
@@ -83,23 +71,10 @@ const telefone = z
       .regex(/^\d{10,11}$/, "Informe o telefone com DDD (10 ou 11 dígitos)."),
   );
 
-/**
- * Texto livre: nome ou sigla de uma instituição já cadastrada, ou o nome de uma
- * nova. Quem decide entre vincular e criar é o service.
- */
-const instituicao = texto(
-  "instituição",
-  LIMITES_ALUNO.instituicaoMin,
-  LIMITES_ALUNO.instituicaoMax,
-  "a",
-);
+/** Escolhida da lista; instituição nova é cadastrada antes, pelo modal do campo. */
+const instituicaoId = idObrigatorio("Escolha a instituição.");
 
-/** "AAAA-MM-DD" do <input type="date"> → meia-noite UTC daquele dia. */
-const inicioEm = z
-  .string({ error: "Informe a data de início." })
-  .min(1, { error: "Informe a data de início.", abort: true })
-  .pipe(z.iso.date("Data inválida."))
-  .transform((data) => new Date(`${data}T00:00:00Z`));
+const inicioEm = dataObrigatoria("data de início");
 
 const turno = z.enum(Turno, { error: "Escolha o turno." });
 const status = z.enum(StatusAluno, { error: "Escolha um status válido." });
@@ -109,7 +84,7 @@ export const criarAlunoSchema = z.object({
   email,
   cpf,
   telefone,
-  instituicao,
+  instituicaoId,
   matricula,
   curso,
   turno,
@@ -118,7 +93,7 @@ export const criarAlunoSchema = z.object({
 
 /** Sem CPF: o documento é a identidade do aluno e não muda depois do cadastro. */
 export const atualizarAlunoSchema = z
-  .object({ nome, email, telefone, instituicao, matricula, curso, turno, inicioEm, status })
+  .object({ nome, email, telefone, instituicaoId, matricula, curso, turno, inicioEm, status })
   .partial()
   .refine((dados) => Object.keys(dados).length > 0, "Nenhum campo para atualizar.");
 

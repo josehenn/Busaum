@@ -1,5 +1,5 @@
-// Por enquanto sem tela própria: as instituições vêm do seed ou nascem no
-// cadastro do aluno, digitadas como texto livre.
+// Instituições não têm tela própria: são cadastradas pelo modal dos formulários
+// de aluno e de ponto (só o nome; sigla e cidade são opcionais).
 
 export type Instituicao = {
   id: string;
@@ -13,4 +13,5 @@ export interface IInstituicaoRepository {
   buscarPorId(id: string): Promise<Instituicao | null>;
   /** Nome ou sigla iguais ao texto, sem diferenciar maiúsculas. */
   buscarPorNomeOuSigla(texto: string): Promise<Instituicao | null>;
+  criar(dados: { nome: string }): Promise<Instituicao>;
 }

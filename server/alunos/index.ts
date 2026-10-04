@@ -1,8 +1,6 @@
-import { prisma } from "@/lib/prisma";
-import { instituicaoRepository } from "@/server/instituicoes";
+import { repositorios } from "@/server/repositorios";
 import { AlunoService } from "./aluno.service";
-import { PrismaAlunoRepository } from "./prisma-aluno.repository";
 
-export const alunoService = new AlunoService(new PrismaAlunoRepository(prisma), instituicaoRepository);
+export const alunoService = new AlunoService(repositorios.alunos, repositorios.instituicoes);
 
 export type { AlunoDTO, AlunoEdicaoDTO } from "./aluno.dto";
