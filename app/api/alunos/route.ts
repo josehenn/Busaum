@@ -1,30 +1,27 @@
 import { NextResponse } from "next/server";
 import { PerfilUsuario } from "@/lib/generated/prisma/enums";
 import { alunoService } from "@/server/alunos";
-import { lerJson, responderErro } from "@/server/comum/http";
+import { lerJson, manipulador } from "@/server/comum/http";
 import { exigirPerfilNaApi } from "@/server/sessao/sessao.service";
 
 /** GET /api/alunos?busca=ana&status=ATIVO */
-export async function GET(request: Request) {
-  try {
-    await exigirPerfilNaApi(PerfilUsuario.ADMIN);
-    const params = new URL(request.url).searchParams;
-    const filtro = {
-      busca: params.get("busca") ?? undefined,
-      status: params.get("status") ?? undefined,
-    };
-    return NextResponse.json(await alunoService.listar(filtro));
-  } catch (erro) {
-    return responderErro(erro);
-  }
-}
+export const GET = manipulador(async (request) => {
+  await exigirPerfilNaApi(PerfilUsuario.ADMIN);
+  const params = new URL(request.url).searchParams;
+  const filtro = {
+    busca: params.get("busca") ?? undefined,
+    status: params.get("status") ?? undefined,
+  };
+  return NextResponse.json(await alunoService.listar(filtro));
+});
 
-export async function POST(request: Request) {
-  try {
-    const usuario = await exigirPerfilNaApi(PerfilUsuario.ADMIN);
-    const aluno = await alunoService.criar(await lerJson(request), usuario.id);
-    return NextResponse.json(aluno, { status: 201 });
-  } catch (erro) {
-    return responderErro(erro);
-  }
-}
+/**
+ * Cria o aluno com uma senha provisória. A senha vem só nesta resposta (não fica
+ * guardada em lugar nenhum além do hash): o admin repassa ao aluno, que é
+ * obrigado a trocá-la no primeiro acesso.
+ */
+export const POST = manipulador(async (request) => {
+  const usuario = await exigirPerfilNaApi(PerfilUsuario.ADMIN);
+  const criado = await alunoService.criar(await lerJson(request), usuario.id);
+  return NextResponse.json(criado, { status: 201, headers: { "Cache-Control": "no-store" } });
+});

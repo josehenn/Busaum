@@ -18,10 +18,13 @@ import { formatarReais } from "@/lib/dinheiro";
 import { filtroDespesasSchema } from "@/lib/esquemas/despesa";
 import { rotuloCategoriaDespesa } from "@/lib/rotulos";
 import { despesaService } from "@/server/despesas";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Despesas" };
 
 export default async function Despesas({ searchParams }: PageProps<"/admin/despesas">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const filtro = filtroDespesasSchema.parse(await searchParams);
   const atual = competenciaDe(hojeLocal());
   const mes = filtro.mes ?? atual;

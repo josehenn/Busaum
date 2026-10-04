@@ -5,11 +5,11 @@ import { storageService, urlDoArquivo } from "@/server/arquivos";
 import { ErroDeAcesso, ErroNaoEncontrado } from "@/server/comum/erros";
 import { manipulador } from "@/server/comum/http";
 import { justificativaService } from "@/server/justificativas";
-import { obterUsuarioAtual } from "@/server/sessao/sessao.service";
+import { exigirPerfilNaApi } from "@/server/sessao/sessao.service";
 
 export const GET = manipulador(async (_request, ctx: RouteContext<"/api/arquivos/[...chave]">) => {
-  const usuario = await obterUsuarioAtual();
-  if (!usuario) throw new ErroDeAcesso("Entre no sistema para ver este arquivo.");
+  // Sem perfil fixo: admin e aluno passam; a regra de quem vê o quê vem abaixo.
+  const usuario = await exigirPerfilNaApi();
 
   const chave = (await ctx.params).chave.join("/");
   if (

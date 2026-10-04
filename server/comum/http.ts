@@ -1,7 +1,33 @@
 // Tradução entre HTTP e a camada de domínio, usada pelos Route Handlers.
 import { NextResponse } from "next/server";
 import type { RespostaDeErro } from "@/lib/api";
-import { ErroDeDominio, ErroDeValidacao } from "./erros";
+import { ErroDeAcesso, ErroDeDominio, ErroDeValidacao } from "./erros";
+
+const METODOS_SEGUROS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Proteção contra CSRF nas rotas que alteram dados: um site de fora não pode
+ * fazer o navegador da vítima disparar POST/PATCH/DELETE com o cookie dela.
+ * Navegadores sempre mandam Origin (e Sec-Fetch-Site) nesses métodos; se vier
+ * de outro site, recusa. Soma-se ao SameSite=Lax do cookie da sessão.
+ */
+function hostDe(url: string) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return null; // "null" (iframe sandbox, file://) ou malformado
+  }
+}
+
+function barrarOutraOrigem(request: Request) {
+  if (METODOS_SEGUROS.has(request.method)) return;
+  const origem = request.headers.get("origin");
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const outraOrigem = origem !== null && hostDe(origem) !== host;
+  if (outraOrigem || request.headers.get("sec-fetch-site") === "cross-site") {
+    throw new ErroDeAcesso("Requisição de outra origem recusada.");
+  }
+}
 
 export function responderErro(erro: unknown) {
   if (erro instanceof ErroDeDominio) {
@@ -23,6 +49,7 @@ export function responderErro(erro: unknown) {
 export function manipulador<C>(fn: (request: Request, ctx: C) => Promise<Response>) {
   return async (request: Request, ctx: C) => {
     try {
+      barrarOutraOrigem(request);
       return await fn(request, ctx);
     } catch (erro) {
       return responderErro(erro);

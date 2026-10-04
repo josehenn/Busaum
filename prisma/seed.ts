@@ -7,6 +7,7 @@
 // (com mensalidades fechadas) e duas semanas de viagens à frente.
 import { config } from "dotenv";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { hashPassword } from "better-auth/crypto";
 import {
   CategoriaDespesa,
   MotivoJustificativa,
@@ -96,7 +97,25 @@ async function limpar() {
   await prisma.aluno.deleteMany();
   await prisma.veiculo.deleteMany();
   await prisma.instituicao.deleteMany();
-  await prisma.usuario.deleteMany();
+  await prisma.convite.deleteMany();
+  await prisma.limiteRequisicao.deleteMany();
+  await prisma.verificacao.deleteMany();
+  await prisma.usuario.deleteMany(); // contas e sessões vão junto (onDelete: Cascade)
+}
+
+/**
+ * Senha de todos os usuários de exemplo (está no README). Só para o banco de
+ * demonstração: em produção de verdade, cada um teria a sua.
+ */
+const SENHA_DEMO = "busaum123";
+
+/** Conta de e-mail e senha para cada usuário, como o Better Auth espera. */
+async function criarContas() {
+  const senha = await hashPassword(SENHA_DEMO); // um hash só: mesmo valor, mesmo custo
+  const usuarios = await prisma.usuario.findMany({ select: { id: true } });
+  await prisma.conta.createMany({
+    data: usuarios.map((u) => ({ usuarioId: u.id, accountId: u.id, providerId: "credential", senha })),
+  });
 }
 
 async function main() {
@@ -621,9 +640,13 @@ async function main() {
       .map(({ valor, ...d }) => ({ ...d, valor: reais(valor), criadoPor })),
   });
 
+  // ---------- Senhas
+  await criarContas();
+
   // ---------- Resumo
   const contagem = {
     usuarios: await prisma.usuario.count(),
+    contas: await prisma.conta.count(),
     alunos: await prisma.aluno.count(),
     veiculos: await prisma.veiculo.count(),
     pontos: await prisma.ponto.count(),
@@ -637,6 +660,7 @@ async function main() {
     despesas: await prisma.despesa.count(),
   };
   console.table(contagem);
+  console.log(`\nLogin: admin@busaum.dev ou o e-mail de qualquer aluno, senha "${SENHA_DEMO}".`);
 }
 
 main()

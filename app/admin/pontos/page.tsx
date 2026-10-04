@@ -15,10 +15,13 @@ import {
 } from "@/components/ui/table";
 import { filtroPontosSchema } from "@/lib/esquemas/ponto";
 import { pontoService } from "@/server/pontos";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Pontos" };
 
 export default async function Pontos({ searchParams }: PageProps<"/admin/pontos">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const filtro = filtroPontosSchema.parse(await searchParams);
   const pontos = await pontoService.listar(filtro);
   const filtrando = Boolean(filtro.busca || filtro.status);

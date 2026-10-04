@@ -20,10 +20,13 @@ import { cn } from "@/lib/utils";
 import { planoService } from "@/server/planos";
 import { rotaService } from "@/server/rotas";
 import { carregarRota } from "./carregar-rota";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Rota" };
 
 export default async function DetalheRota({ params }: PageProps<"/admin/rotas/[id]">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const { id } = await params;
   const rota = await carregarRota(id);
   const [planos, ocupacao] = await Promise.all([planoService.listarDaRota(id), rotaService.ocupacao(id)]);

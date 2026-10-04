@@ -30,7 +30,17 @@ export class ErroNaoEncontrado extends ErroDeDominio {
   readonly status = 404;
 }
 
-/** Sem sessão, ou com o perfil errado para a operação. */
+/** Sem sessão (não entrou, sessão expirada ou revogada). */
+export class ErroNaoAutenticado extends ErroDeDominio {
+  readonly status = 401;
+}
+
+/** Com sessão, mas sem permissão para a operação (perfil errado, recurso de outro). */
 export class ErroDeAcesso extends ErroDeDominio {
   readonly status = 403;
+}
+
+/** Convite vencido, revogado ou já usado. */
+export class ErroExpirado extends ErroDeDominio {
+  readonly status = 410;
 }

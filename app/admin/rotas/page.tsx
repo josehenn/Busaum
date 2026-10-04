@@ -15,10 +15,13 @@ import {
 import { descreverDias } from "@/lib/datas";
 import { formatarReais } from "@/lib/dinheiro";
 import { rotaService } from "@/server/rotas";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Rotas e planos" };
 
 export default async function Rotas() {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const rotas = await rotaService.listar();
 
   return (

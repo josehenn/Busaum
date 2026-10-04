@@ -4,10 +4,13 @@ import { BusIcon, CalendarDaysIcon, FileCheckIcon, UsersIcon, WalletIcon } from 
 import { CabecalhoPagina } from "@/components/layout/cabecalho-pagina";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { obterResumoAdmin } from "@/server/painel/painel.service";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Painel" };
 
 export default async function PainelAdmin() {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const resumo = await obterResumoAdmin();
 
   const indicadores = [

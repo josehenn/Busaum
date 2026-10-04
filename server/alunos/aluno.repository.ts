@@ -20,7 +20,13 @@ export type Aluno = {
   instituicao: { id: string; nome: string; sigla: string | null };
 };
 
-export type DadosCriarAluno = CriarAlunoDTO & { criadoPor: string };
+export type DadosCriarAluno = CriarAlunoDTO & {
+  criadoPor: string;
+  /** Hash da senha (nunca a senha em si). */
+  senhaHash: string;
+  /** true = senha provisória, a troca é obrigatória no primeiro acesso. */
+  trocarSenha: boolean;
+};
 export type DadosAtualizarAluno = AtualizarAlunoDTO;
 
 export interface IAlunoRepository {
@@ -30,8 +36,10 @@ export interface IAlunoRepository {
   idDoUsuarioComEmail(email: string): Promise<string | null>;
   idDoAlunoComCpf(cpf: string): Promise<string | null>;
   idDoAlunoComMatricula(instituicaoId: string, matricula: string): Promise<string | null>;
-  /** Cria, numa única transação, o usuário de login (perfil ALUNO) e o aluno. */
+  /** Cria, numa única transação, o usuário de login (perfil ALUNO), a conta com a senha e o aluno. */
   criar(dados: DadosCriarAluno): Promise<Aluno>;
+  /** Troca o hash da senha, exige troca no próximo acesso e encerra as sessões abertas. */
+  redefinirSenha(usuarioId: string, senhaHash: string): Promise<void>;
   /**
    * Atualiza aluno e usuário. Com `encerrarPlanosEm`, fecha na mesma transação os
    * planos de transporte ainda abertos (vigenteAte = esse instante).

@@ -1,6 +1,7 @@
 import { Prisma, type PrismaClient } from "@/lib/generated/prisma/client";
 import { PerfilUsuario } from "@/lib/generated/prisma/enums";
 import type { FiltroAlunos } from "@/lib/esquemas/aluno";
+import { PROVEDOR_SENHA } from "@/server/auth/credenciais";
 import { ErroDeConflito } from "@/server/comum/erros";
 import type {
   Aluno,
@@ -56,20 +57,24 @@ export class PrismaAlunoRepository implements IAlunoRepository {
     return aluno?.id ?? null;
   }
 
-  async criar({ nome, email, instituicaoId, ...dados }: DadosCriarAluno) {
+  async criar(dados: DadosCriarAluno) {
     try {
-      // Escrita aninhada: o Prisma cria usuário e aluno na mesma transação.
-      return await this.prisma.aluno.create({
-        data: {
-          ...dados,
-          instituicao: { connect: { id: instituicaoId } },
-          usuario: { create: { nome, email, perfil: PerfilUsuario.ALUNO } },
-        },
-        include: incluir,
-      });
+      return await this.prisma.$transaction((tx) => criarAlunoComLogin(tx, dados));
     } catch (erro) {
       throw traduzirDuplicidade(erro);
     }
+  }
+
+  async redefinirSenha(usuarioId: string, senhaHash: string) {
+    await this.prisma.$transaction([
+      this.prisma.conta.updateMany({
+        where: { usuarioId, providerId: PROVEDOR_SENHA },
+        data: { senha: senhaHash },
+      }),
+      this.prisma.usuario.update({ where: { id: usuarioId }, data: { trocarSenha: true } }),
+      // Derruba todas as sessões: quem estava logado com a senha antiga sai.
+      this.prisma.sessao.deleteMany({ where: { usuarioId } }),
+    ]);
   }
 
   async atualizar(
@@ -102,10 +107,36 @@ export class PrismaAlunoRepository implements IAlunoRepository {
 }
 
 /**
+ * Cria usuário (perfil ALUNO), conta de e-mail e senha e aluno. Recebe a
+ * transação de quem chama: o convite usa a mesma função dentro da transação que
+ * marca o convite como usado.
+ */
+export async function criarAlunoComLogin(
+  tx: Prisma.TransactionClient,
+  { nome, email, instituicaoId, senhaHash, trocarSenha, ...dados }: DadosCriarAluno,
+) {
+  const usuario = await tx.usuario.create({
+    data: { nome, email, perfil: PerfilUsuario.ALUNO, trocarSenha },
+  });
+  // accountId = id do usuário: é como o Better Auth acha a conta de senha.
+  await tx.conta.create({
+    data: { usuarioId: usuario.id, accountId: usuario.id, providerId: PROVEDOR_SENHA, senha: senhaHash },
+  });
+  return tx.aluno.create({
+    data: {
+      ...dados,
+      usuario: { connect: { id: usuario.id } },
+      instituicao: { connect: { id: instituicaoId } },
+    },
+    include: incluir,
+  });
+}
+
+/**
  * Rede de segurança para corrida entre duas requisições: o service confere as
  * unicidades antes, mas o @unique do banco é quem garante de fato.
  */
-function traduzirDuplicidade(erro: unknown) {
+export function traduzirDuplicidade(erro: unknown) {
   if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
     return new ErroDeConflito("E-mail ou CPF já cadastrado por outra pessoa.");
   }

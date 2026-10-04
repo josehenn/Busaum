@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PencilIcon, PlusIcon } from "lucide-react";
+import { LinkIcon, PencilIcon, PlusIcon } from "lucide-react";
 import { FiltroLista } from "@/components/formulario/filtro-lista";
 import { CabecalhoPagina } from "@/components/layout/cabecalho-pagina";
 import { Button } from "@/components/ui/button";
@@ -16,10 +16,13 @@ import { filtroAlunosSchema } from "@/lib/esquemas/aluno";
 import { opcoes, rotuloStatusAluno, rotuloTurno } from "@/lib/rotulos";
 import { alunoService } from "@/server/alunos";
 import { StatusAlunoBadge } from "./_componentes/status-aluno";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Alunos" };
 
 export default async function Alunos({ searchParams }: PageProps<"/admin/alunos">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const filtro = filtroAlunosSchema.parse(await searchParams);
   const alunos = await alunoService.listar(filtro);
   const filtrando = Boolean(filtro.busca || filtro.status);
@@ -30,10 +33,16 @@ export default async function Alunos({ searchParams }: PageProps<"/admin/alunos"
         titulo="Alunos"
         descricao="Cadastro dos estudantes que usam o transporte. Cada aluno tem seu próprio acesso."
         acoes={
-          <Button nativeButton={false} render={<Link href="/admin/alunos/novo" />}>
-            <PlusIcon />
-            Novo aluno
-          </Button>
+          <>
+            <Button variant="outline" nativeButton={false} render={<Link href="/admin/alunos/convites" />}>
+              <LinkIcon />
+              Convites
+            </Button>
+            <Button nativeButton={false} render={<Link href="/admin/alunos/novo" />}>
+              <PlusIcon />
+              Novo aluno
+            </Button>
+          </>
         }
       />
 

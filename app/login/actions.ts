@@ -1,19 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { PerfilUsuario } from "@/lib/generated/prisma/enums";
-import { entrar, sair } from "@/server/sessao/sessao.service";
+import { auth } from "@/server/auth/auth";
 
-export async function entrarComo(formData: FormData) {
-  const usuarioId = formData.get("usuarioId");
-  const perfil = typeof usuarioId === "string" ? await entrar(usuarioId) : null;
-
-  if (perfil === PerfilUsuario.ADMIN) redirect("/admin");
-  if (perfil === PerfilUsuario.ALUNO) redirect("/aluno");
-  redirect("/login");
-}
-
+/** Apaga a sessão no banco (o cookie antigo deixa de valer) e limpa o cookie. */
 export async function sairDaSessao() {
-  await sair();
+  await auth.api.signOut({ headers: await headers() });
   redirect("/login");
 }

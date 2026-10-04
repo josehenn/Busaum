@@ -1,7 +1,9 @@
 // Regras de negócio de alunos. Depende de dois repositórios (alunos e
 // instituições), ambos injetados pelo construtor.
 import { StatusAluno } from "@/lib/generated/prisma/enums";
+import type { CriarAlunoDTO } from "@/lib/esquemas/aluno";
 import type { ErrosPorCampo } from "@/lib/esquemas/erros";
+import { gerarSenhaProvisoria, hashSenha } from "@/server/auth/credenciais";
 import { ErroDeConflito, ErroDeValidacao, ErroNaoEncontrado } from "@/server/comum/erros";
 import { validar } from "@/server/comum/validacao";
 import type { IInstituicaoRepository } from "@/server/instituicoes/instituicao.repository";
@@ -15,6 +17,8 @@ import {
   type AlunoEdicaoDTO,
 } from "./aluno.dto";
 import type { Aluno, IAlunoRepository } from "./aluno.repository";
+
+export type AlunoCriadoDTO = { aluno: AlunoDTO; senhaProvisoria: string };
 
 export class AlunoService {
   constructor(
@@ -36,8 +40,37 @@ export class AlunoService {
     return paraAlunoEdicaoDTO(await this.obter(id));
   }
 
-  async criar(entrada: unknown, criadoPor: string): Promise<AlunoDTO> {
+  /**
+   * Cadastro pelo admin: o aluno nasce com uma senha provisória, devolvida só
+   * aqui (o banco guarda o hash). No primeiro acesso ele é obrigado a trocá-la.
+   */
+  async criar(entrada: unknown, criadoPor: string): Promise<AlunoCriadoDTO> {
     const dados = validar(criarAlunoSchema, entrada);
+    await this.conferirNovoAluno(dados);
+
+    const senhaProvisoria = gerarSenhaProvisoria();
+    const aluno = await this.alunos.criar({
+      ...dados,
+      criadoPor,
+      senhaHash: await hashSenha(senhaProvisoria),
+      trocarSenha: true,
+    });
+    return { aluno: paraAlunoDTO(aluno), senhaProvisoria };
+  }
+
+  /** Aluno esqueceu a senha: gera outra provisória e derruba as sessões abertas. */
+  async redefinirSenha(id: string): Promise<{ senhaProvisoria: string }> {
+    const aluno = await this.obter(id);
+    const senhaProvisoria = gerarSenhaProvisoria();
+    await this.alunos.redefinirSenha(aluno.usuarioId, await hashSenha(senhaProvisoria));
+    return { senhaProvisoria };
+  }
+
+  /**
+   * Regras de um aluno novo (instituição existe; e-mail, CPF e matrícula livres).
+   * Pública porque o autocadastro por convite cria aluno pelo mesmo caminho.
+   */
+  async conferirNovoAluno(dados: CriarAlunoDTO) {
     await this.garantirInstituicao(dados.instituicaoId);
     await this.garantirUnicidade({
       email: dados.email,
@@ -45,8 +78,6 @@ export class AlunoService {
       instituicaoId: dados.instituicaoId,
       matricula: dados.matricula ?? undefined,
     });
-
-    return paraAlunoDTO(await this.alunos.criar({ ...dados, criadoPor }));
   }
 
   async atualizar(id: string, entrada: unknown): Promise<AlunoDTO> {

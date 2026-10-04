@@ -12,10 +12,13 @@ import { formatarReais } from "@/lib/dinheiro";
 import { ErroNaoEncontrado } from "@/server/comum/erros";
 import { mensalidadeService, type MensalidadeDetalheDTO } from "@/server/mensalidades";
 import { FormularioAjuste } from "../_componentes/formulario-ajuste";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Mensalidade" };
 
 export default async function DetalheMensalidade({ params }: PageProps<"/admin/mensalidades/[id]">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const { id } = await params;
   let m: MensalidadeDetalheDTO;
   try {

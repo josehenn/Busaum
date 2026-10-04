@@ -6,10 +6,13 @@ import { planoService } from "@/server/planos";
 import { rotaService } from "@/server/rotas";
 import { carregarRota } from "../../carregar-rota";
 import { FormularioPlano } from "./formulario-plano";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Contratar aluno" };
 
 export default async function NovoPlano({ params, searchParams }: PageProps<"/admin/rotas/[id]/planos/novo">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const { id } = await params;
   const { aluno: alunoParam } = await searchParams;
   const alunoId = typeof alunoParam === "string" ? alunoParam : undefined;

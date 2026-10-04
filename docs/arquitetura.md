@@ -115,7 +115,40 @@ Regras do padrão:
 | DTO | `lib/esquemas/*.ts` (entrada, Zod) e `server/*/*.dto.ts` / tipos `*DTO` (saída) | Contrato de entrada e saída; controla o que é exposto (LGPD) |
 | Adapter | `server/arquivos/`: `IStorageService` → `LocalStorageService` (dev) e `VercelBlobStorageService` (produção) | Guardar anexos sem o sistema saber onde |
 | Strategy | `server/pagamentos/`: `PaymentGateway` → `FakePaymentGateway` | Trocar o provedor de pagamento sem mudar a regra de mensalidade |
-| Middleware (de requisição) | `manipulador()` em `server/comum/http.ts` envolve todo Route Handler; `exigirPerfil*` na sessão | Tradução de erros e autorização em um lugar só |
+| Middleware (de requisição) | `proxy.ts` (checagem otimista do cookie); `manipulador()` em `server/comum/http.ts` envolve todo Route Handler (origem + erros); `exigirPerfil*` na sessão | Autenticação, CSRF e tradução de erros em um lugar só |
+| Data Access Layer (DAL) | `server/sessao/sessao.service.ts` | Único lugar que lê a sessão; o resto recebe um `UsuarioSessao` |
+
+## Autenticação e autorização
+
+Login com e-mail e senha pelo **Better Auth** (`server/auth/auth.ts`), com sessão no
+banco. A verificação acontece em camadas, porque nenhuma sozinha basta:
+
+| Camada | Onde | O que faz |
+| --- | --- | --- |
+| 1. Proxy | `proxy.ts` | Sem o cookie de sessão, `/admin`, `/aluno` e `/conta` redirecionam para `/login` antes de renderizar. Só olha se o cookie existe (roda em toda navegação, não consulta o banco) |
+| 2. Páginas e layouts | `exigirPerfil()` em todo `page.tsx` e `layout.tsx` das áreas | Valida a sessão no banco e o perfil. Fica também na página porque o layout não roda de novo na navegação do cliente |
+| 3. API | `exigirPerfilNaApi()` em todo Route Handler | A API pode ser chamada direto, sem tela: 401 sem sessão, 403 com perfil errado ou senha provisória |
+| 4. Service | services de aluno (`alunoId` da sessão) | O aluno nunca age em nome de outro: o id vem da sessão, não do corpo da requisição |
+
+Como o aluno ganha acesso:
+- **Convite** (`/admin/alunos/convites`): o admin gera um link `/cadastro/<token>`; o
+  aluno preenche os próprios dados e cria a senha. Uso único, 7 dias, revogável,
+  opcionalmente preso a um e-mail.
+- **Cadastro pelo admin**: o sistema gera uma senha provisória, mostrada uma única
+  vez. No primeiro acesso o aluno é obrigado a trocá-la (`/conta/senha`). O admin pode
+  redefinir a senha depois (gera outra provisória e derruba as sessões).
+
+| Ameaça | Defesa |
+| --- | --- |
+| Vazamento do banco expor senhas | Hash scrypt com sal (Better Auth); convites guardados como SHA-256 do token |
+| Força bruta no login | Limite de 5 tentativas por minuto por IP, contado no banco (`LimiteRequisicao`) → 429 |
+| Descobrir quais e-mails existem | Login responde sempre "E-mail ou senha incorretos."; convite inválido, vencido ou usado têm a mesma mensagem |
+| Cookie forjado ou roubado depois do logout | O cookie só carrega um token assinado; a sessão é conferida no banco a cada requisição e apagada no logout, na troca e na redefinição de senha |
+| CSRF (outro site disparando ações com o cookie da vítima) | Cookie `SameSite=Lax` + `httpOnly`; Better Auth confere a origem nos endpoints dele; `manipulador()` recusa POST/PATCH/DELETE de outra origem; Server Actions têm a checagem do próprio Next |
+| Escalada de perfil | `perfil` e `trocarSenha` com `input: false`: nenhuma requisição os define; autocadastro pela API do Better Auth desligado (`disableSignUp`) |
+| Redirecionamento aberto (`/login?proxima=https://golpe.com`) | `caminhoInterno()` em `lib/redirecionamento.ts` só aceita caminhos do próprio site |
+| Convite usado duas vezes ao mesmo tempo | `updateMany` com `usadoEm: null` dentro da transação: só um cadastro marca o convite |
+| Token do convite vazar pelo Referer ou buscadores | Página do cadastro com `referrer: no-referrer` e `noindex` |
 
 ## Regras de domínio centralizadas
 

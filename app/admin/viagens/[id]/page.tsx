@@ -22,6 +22,8 @@ import { veiculoService } from "@/server/veiculos";
 import { viagemService } from "@/server/viagens";
 import { StatusViagemBadge } from "../_componentes/status-viagem";
 import { TrocarVeiculo } from "../_componentes/trocar-veiculo";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Viagem" };
 
@@ -34,6 +36,7 @@ function Marca({ sim }: { sim: boolean }) {
 }
 
 export default async function DetalheViagem({ params }: PageProps<"/admin/viagens/[id]">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const { id } = await params;
   let viagem: Awaited<ReturnType<typeof viagemService.detalhar>>;
   try {

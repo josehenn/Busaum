@@ -17,7 +17,9 @@ o React renderiza as telas e os Route Handlers do Next expõem a API.
 ├── server/               # Camada de servidor: regras de negócio por módulo
 │   ├── repositorios.ts   # Instancia todos os repositórios (composition root)
 │   ├── comum/            # Erros de domínio, validação, tradução para HTTP
-│   ├── sessao/           # Sessão de demonstração (no lugar do Auth)
+│   ├── auth/             # Configuração do Better Auth, hash e senha provisória
+│   ├── sessao/           # Camada de acesso: quem está logado, exigirPerfil
+│   ├── convites/         # Convites de autocadastro do aluno
 │   ├── arquivos/         # StorageService (local / Vercel Blob)
 │   ├── pagamentos/       # PaymentGateway (fake)
 │   └── <modulo>/         # veiculos, alunos, instituicoes, pontos, rotas, planos,
@@ -64,13 +66,13 @@ o React renderiza as telas e os Route Handlers do Next expõem a API.
 
 ## Áreas e sessão
 
-- `/` e `/transparencia` são públicas. `/admin/*` e `/aluno/*` exigem sessão com o
-  perfil certo: o `layout.tsx` de cada área chama `exigirPerfil()` e manda para
-  `/login` quem não tem.
-- A autenticação ficou fora desta entrega. `/login` é um **acesso de demonstração**:
-  escolhe-se um usuário do seed e o id vai para um cookie. Tudo passa por
-  `server/sessao/sessao.service.ts`, que é o único arquivo a mudar quando o Better
-  Auth entrar.
+- `/`, `/transparencia`, `/login` e `/cadastro/<token>` são públicas. `/admin/*`,
+  `/aluno/*` e `/conta/*` exigem sessão com o perfil certo. **Toda página** dessas
+  áreas chama `exigirPerfil()` (não só o layout: layouts não rodam de novo na
+  navegação do cliente) e todo Route Handler chama `exigirPerfilNaApi()`.
+- A sessão vem do Better Auth (`server/auth/auth.ts`), mas só
+  `server/sessao/sessao.service.ts` conversa com ele: o resto do sistema recebe um
+  `UsuarioSessao`. Detalhes e ameaças cobertas em [arquitetura](arquitetura.md#autenticação-e-autorização).
 - Item do menu sem página ainda cai em `app/<area>/[...modulo]/page.tsx` ("em
   construção"). Ao criar `app/admin/veiculos/page.tsx`, a rota específica passa na
   frente sozinha.

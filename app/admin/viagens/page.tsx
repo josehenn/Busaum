@@ -15,10 +15,13 @@ import {
 import { dataIso, hojeLocal } from "@/lib/datas";
 import { viagemService } from "@/server/viagens";
 import { StatusViagemBadge } from "./_componentes/status-viagem";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Viagens" };
 
 export default async function Viagens({ searchParams }: PageProps<"/admin/viagens">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const hoje = dataIso(hojeLocal());
   const dia = z.iso.date().catch(hoje).parse((await searchParams).dia);
   const viagens = await viagemService.listarDoDia(dia);

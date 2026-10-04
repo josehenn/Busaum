@@ -17,10 +17,13 @@ import { formatarData, formatarDataHora } from "@/lib/datas";
 import { filtroJustificativasSchema } from "@/lib/esquemas/justificativa";
 import { opcoes, rotuloMotivoJustificativa, rotuloStatusJustificativa } from "@/lib/rotulos";
 import { justificativaService } from "@/server/justificativas";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Justificativas" };
 
 export default async function Justificativas({ searchParams }: PageProps<"/admin/justificativas">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const filtro = filtroJustificativasSchema.parse(await searchParams);
   const lista = await justificativaService.listar(filtro);
 

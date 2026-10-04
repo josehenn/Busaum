@@ -1,4 +1,5 @@
-import { LogOutIcon } from "lucide-react";
+import Link from "next/link";
+import { KeyRoundIcon, LogOutIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { sairDaSessao } from "@/app/login/actions";
 import type { UsuarioSessao } from "@/server/sessao/sessao.service";
@@ -37,6 +38,16 @@ export function AreaLogada({
               <p className="text-sm font-medium">{usuario.nome}</p>
               <p className="text-xs text-muted-foreground">{usuario.email}</p>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              nativeButton={false}
+              render={<Link href="/conta/senha" />}
+              title="Trocar senha"
+            >
+              <KeyRoundIcon />
+              <span className="hidden sm:inline">Senha</span>
+            </Button>
             <form action={sairDaSessao}>
               <Button type="submit" variant="outline" size="sm">
                 <LogOutIcon />

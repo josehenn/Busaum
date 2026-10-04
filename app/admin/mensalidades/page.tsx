@@ -20,10 +20,13 @@ import { filtroMensalidadesSchema } from "@/lib/esquemas/mensalidade";
 import { mensalidadeService } from "@/server/mensalidades";
 import { DIA_VENCIMENTO } from "@/server/mensalidades/mensalidade.service";
 import { FiltroMensalidades } from "./_componentes/filtro-mensalidades";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Mensalidades" };
 
 export default async function Mensalidades({ searchParams }: PageProps<"/admin/mensalidades">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const filtro = filtroMensalidadesSchema.parse(await searchParams);
   const [lista, competencias, paraFechar] = await Promise.all([
     mensalidadeService.listar(filtro),

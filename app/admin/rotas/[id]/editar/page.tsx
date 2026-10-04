@@ -5,10 +5,13 @@ import { pontoService } from "@/server/pontos";
 import { veiculoService } from "@/server/veiculos";
 import { FormularioRota } from "../../_componentes/formulario-rota";
 import { carregarRota } from "../carregar-rota";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Editar rota" };
 
 export default async function EditarRota({ params }: PageProps<"/admin/rotas/[id]/editar">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const { id } = await params;
   const [rota, veiculos, pontos] = await Promise.all([
     carregarRota(id),

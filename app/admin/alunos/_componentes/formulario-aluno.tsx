@@ -6,6 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { DialogoSegredo } from "@/components/formulario/dialogo-segredo";
 import { SelectComCadastro } from "@/components/formulario/select-com-cadastro";
 import { SelectSimples } from "@/components/formulario/select-simples";
 import { useFormulario } from "@/components/formulario/use-formulario";
@@ -61,6 +62,7 @@ export function FormularioAluno({
   const router = useRouter();
   const editando = Boolean(aluno);
   const [enviando, setEnviando] = useState(false);
+  const [senhaProvisoria, setSenhaProvisoria] = useState<string | null>(null);
   const opcoesInstituicao = instituicoes.map((i) => ({ value: i.id, label: rotuloInstituicao(i) }));
 
   const form = useFormulario({
@@ -103,9 +105,11 @@ export function FormularioAluno({
     }
 
     setEnviando(true);
-    const resultado = aluno
-      ? await enviarJson(`/api/alunos/${aluno.id}`, "PATCH", form.corpo)
-      : await enviarJson("/api/alunos", "POST", form.corpo);
+    const resultado = await enviarJson<{ senhaProvisoria?: string }>(
+      aluno ? `/api/alunos/${aluno.id}` : "/api/alunos",
+      aluno ? "PATCH" : "POST",
+      form.corpo,
+    );
     setEnviando(false);
 
     if (!resultado.ok) {
@@ -114,7 +118,16 @@ export function FormularioAluno({
       return;
     }
 
-    toast.success(editando ? "Aluno atualizado." : "Aluno cadastrado.");
+    if (resultado.dados.senhaProvisoria) {
+      toast.success("Aluno cadastrado.");
+      setSenhaProvisoria(resultado.dados.senhaProvisoria);
+      return; // volta para a lista ao fechar o diálogo da senha
+    }
+    toast.success("Aluno atualizado.");
+    voltarParaLista();
+  }
+
+  function voltarParaLista() {
     router.push("/admin/alunos");
     router.refresh();
   }
@@ -334,6 +347,22 @@ export function FormularioAluno({
           </Button>
         </div>
       </FieldGroup>
+
+      {senhaProvisoria && (
+        <DialogoSegredo
+          aberto
+          aoFechar={voltarParaLista}
+          titulo="Senha provisória do aluno"
+          descricao={
+            <>
+              Repasse ao aluno junto com o e-mail <strong>{valores.email.trim().toLowerCase()}</strong>.
+              No primeiro acesso ele será obrigado a criar a própria senha.
+            </>
+          }
+          rotulo="Senha provisória"
+          valor={senhaProvisoria}
+        />
+      )}
     </form>
   );
 }

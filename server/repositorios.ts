@@ -3,6 +3,7 @@
 // service pode depender do repositório de outro módulo sem ciclo de import.
 import { prisma } from "@/lib/prisma";
 import { PrismaAlunoRepository } from "./alunos/prisma-aluno.repository";
+import { PrismaConviteRepository } from "./convites/prisma-convite.repository";
 import { PrismaDeclaracaoRepository } from "./declaracoes/prisma-declaracao.repository";
 import { PrismaDespesaRepository } from "./despesas/prisma-despesa.repository";
 import { PrismaInstituicaoRepository } from "./instituicoes/prisma-instituicao.repository";
@@ -16,6 +17,7 @@ import { PrismaViagemRepository } from "./viagens/prisma-viagem.repository";
 
 export const repositorios = {
   alunos: new PrismaAlunoRepository(prisma),
+  convites: new PrismaConviteRepository(prisma),
   declaracoes: new PrismaDeclaracaoRepository(prisma),
   despesas: new PrismaDespesaRepository(prisma),
   instituicoes: new PrismaInstituicaoRepository(prisma),

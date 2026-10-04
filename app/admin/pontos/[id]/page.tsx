@@ -5,10 +5,13 @@ import { ErroNaoEncontrado } from "@/server/comum/erros";
 import { instituicaoService } from "@/server/instituicoes";
 import { pontoService, type PontoDTO } from "@/server/pontos";
 import { FormularioPonto } from "../_componentes/formulario-ponto";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Editar ponto" };
 
 export default async function EditarPonto({ params }: PageProps<"/admin/pontos/[id]">) {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   const { id } = await params;
 
   let ponto: PontoDTO;

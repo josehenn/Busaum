@@ -93,10 +93,96 @@ model Usuario {
   emailVerificado Boolean       @default(false)
   imagem          String?
   perfil          PerfilUsuario
+  // Senha provisória (criada pelo admin ou redefinida): o acesso fica restrito
+  // à troca de senha até o usuário escolher a dele.
+  trocarSenha     Boolean       @default(false)
   criadoEm        DateTime      @default(now())
   atualizadoEm    DateTime      @updatedAt
 
-  aluno Aluno?
+  aluno   Aluno?
+  sessoes Sessao[]
+  contas  Conta[]
+}
+
+// ---------------------------------------------------------------- Autenticação
+// Tabelas do Better Auth (server/auth/auth.ts mapeia os nomes para português).
+
+/**
+ * Sessão no banco: apagar a linha derruba o login na hora (logout, troca de senha).
+ */
+model Sessao {
+  id           String   @id @default(cuid())
+  usuarioId    String
+  token        String   @unique
+  expiraEm     DateTime
+  ip           String?
+  userAgent    String?
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+/**
+ * Forma de entrar do usuário. Aqui só "credential" (e-mail e senha); senha guarda o hash.
+ */
+model Conta {
+  id                    String    @id @default(cuid())
+  usuarioId             String
+  accountId             String
+  providerId            String
+  senha                 String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  criadoEm              DateTime  @default(now())
+  atualizadoEm          DateTime  @updatedAt
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+model Verificacao {
+  id            String   @id @default(cuid())
+  identificador String
+  valor         String
+  expiraEm      DateTime
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  @@index([identificador])
+}
+
+/**
+ * Limite de tentativas (login): no banco porque a Vercel roda várias instâncias.
+ */
+model LimiteRequisicao {
+  id               String @id @default(cuid())
+  chave            String @unique
+  contagem         Int
+  ultimaRequisicao BigInt
+}
+
+/**
+ * Convite de autocadastro do aluno. O token vai só no link; aqui fica o hash
+ * SHA-256, então quem lê o banco não consegue usar o convite.
+ */
+model Convite {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  email      String? // preenchido = só este e-mail pode usar
+  expiraEm   DateTime
+  usadoEm    DateTime?
+  revogadoEm DateTime?
+  alunoId    String? // aluno criado com o convite
+  criadoPor  String
+  criadoEm   DateTime  @default(now())
 }
 
 model Instituicao {

@@ -485,10 +485,20 @@ Sul". Por isso `sigla` e `cidade` são opcionais.
 abrigo de esquina não precisa saber. Assim uma rota que passa por duas faculdades da
 mesma cidade deixa de ser um problema de modelagem.
 
-**Tabelas do Better Auth ficam de fora do diagrama.** `session`, `account` e
-`verification` são criadas e mantidas pelo Better Auth; `Usuario` é a tabela `user`
-dele, estendida com `perfil` via `additionalFields`. Isso precisa ser confirmado ao
-implementar o cartão de autenticação.
+**Tabelas de autenticação ficam de fora do diagrama.** O Better Auth usa as nossas
+tabelas, com nomes em português (o mapeamento está em `server/auth/auth.ts`):
+
+| Tabela | Papel |
+| --- | --- |
+| `Usuario` | É a tabela `user` do Better Auth, estendida com `perfil` e `trocarSenha` (`additionalFields` com `input: false`: nenhuma requisição define o próprio perfil) |
+| `Sessao` | Uma linha por login. Fica no banco, e não num JWT, para poder ser revogada na hora (logout, troca e redefinição de senha) |
+| `Conta` | Forma de entrar: aqui só e-mail e senha (`providerId = "credential"`). `senha` guarda o hash scrypt, nunca a senha |
+| `Verificacao` | Exigida pelo Better Auth (tokens de verificação); sem uso por enquanto |
+| `LimiteRequisicao` | Contagem do limite de tentativas de login. No banco porque na Vercel cada instância teria a sua contagem em memória |
+| `Convite` | Link de autocadastro do aluno: uso único, vence em 7 dias, pode ser revogado. Guarda só o SHA-256 do token |
+
+`trocarSenha` marca a senha provisória (aluno criado pelo admin ou senha
+redefinida): até trocar, o usuário só acessa a tela de troca de senha.
 
 ## O que isso muda nos cartões do Trello
 

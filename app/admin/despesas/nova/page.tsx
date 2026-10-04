@@ -3,10 +3,13 @@ import { CabecalhoPagina } from "@/components/layout/cabecalho-pagina";
 import { dataIso, hojeLocal } from "@/lib/datas";
 import { veiculoService } from "@/server/veiculos";
 import { FormularioDespesa } from "../_componentes/formulario-despesa";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Nova despesa" };
 
 export default async function NovaDespesa() {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   return (
     <>
       <CabecalhoPagina titulo="Nova despesa" />

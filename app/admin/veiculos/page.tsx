@@ -14,10 +14,13 @@ import {
 import { rotuloTipoVeiculo } from "@/lib/rotulos";
 import { veiculoService } from "@/server/veiculos";
 import { StatusVeiculoBadge } from "./_componentes/status-veiculo";
+import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { exigirPerfil } from "@/server/sessao/sessao.service";
 
 export const metadata: Metadata = { title: "Veículos" };
 
 export default async function Veiculos() {
+  await exigirPerfil(PerfilUsuario.ADMIN);
   // Server Component chama o service direto, sem passar pela própria API.
   const veiculos = await veiculoService.listar();
 
