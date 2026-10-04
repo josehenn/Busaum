@@ -41,6 +41,21 @@ Todos os usuários de exemplo entram com a senha **`busaum123`**:
 - Na Vercel, configure `BETTER_AUTH_SECRET` (um valor novo, diferente do local) e
   `BETTER_AUTH_URL=https://busaum.vercel.app`.
 
+### Deploy com migration nova
+O build da Vercel **não** aplica migrations: os previews usam o mesmo banco da
+produção, e um PR não aprovado não pode alterar o schema dela. Sempre que surgir uma
+pasta nova em `prisma/migrations`, aplique no Neon **antes** do push. Com a CLI da
+Vercel logada (`vercel login` e `vercel link`):
+
+```bash
+vercel env pull .env.producao --environment=production --yes
+DATABASE_URL="$(grep '^DATABASE_URL_UNPOOLED=' .env.producao | cut -d= -f2- | tr -d '"')" \
+  npx prisma migrate deploy --config prisma7.config.ts
+rm .env.producao
+```
+
+Sem isso, o código novo chega antes da coluna e as páginas que leem o banco falham.
+
 ## Scripts
 | Script | O que faz |
 | --- | --- |
