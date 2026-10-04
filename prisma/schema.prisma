@@ -1,7 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
+// Fonte: docs/modelagem.md — ao mudar este schema, mude o documento junto.
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +7,351 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- Enums
+
+enum PerfilUsuario {
+  ADMIN
+  ALUNO
+}
+
+enum StatusAluno {
+  ATIVO
+  INATIVO
+  TRANCADO
+}
+
+enum Turno {
+  MATUTINO
+  VESPERTINO
+  NOTURNO
+}
+
+enum TipoVeiculo {
+  ONIBUS
+  VAN
+}
+
+enum StatusVeiculo {
+  ATIVO
+  MANUTENCAO
+  INATIVO
+}
+
+enum StatusViagem {
+  AGENDADA
+  REALIZADA
+  CANCELADA
+}
+
+enum OrigemDeclaracao {
+  ALUNO
+  ADMIN
+}
+
+enum MotivoJustificativa {
+  ATESTADO
+  AULA_CANCELADA
+  OUTRO
+}
+
+enum StatusJustificativa {
+  PENDENTE
+  APROVADA
+  RECUSADA
+}
+
+enum SituacaoDiaria {
+  COBRADA
+  ISENTA_JUSTIFICADA
+  ISENTA_VIAGEM_CANCELADA
+}
+
+enum StatusMensalidade {
+  ABERTA
+  PAGA
+  VENCIDA
+  CANCELADA
+}
+
+enum CategoriaDespesa {
+  COMBUSTIVEL
+  MANUTENCAO
+  PEDAGIO
+  SEGURO
+  SALARIO
+  OUTROS
+}
+
+// ---------------------------------------------------------------- Models
+
+model Usuario {
+  id              String        @id @default(cuid())
+  nome            String
+  email           String        @unique
+  emailVerificado Boolean       @default(false)
+  imagem          String?
+  perfil          PerfilUsuario
+  criadoEm        DateTime      @default(now())
+  atualizadoEm    DateTime      @updatedAt
+
+  aluno Aluno?
+}
+
+model Instituicao {
+  id           String   @id @default(cuid())
+  nome         String   @unique
+  sigla        String
+  cidade       String
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  alunos Aluno[]
+  pontos Ponto[]
+}
+
+model Aluno {
+  id            String      @id @default(cuid())
+  usuarioId     String      @unique
+  instituicaoId String
+  cpf           String      @unique // sensível (LGPD)
+  telefone      String // sensível (LGPD)
+  matricula     String
+  curso         String
+  turno         Turno
+  status        StatusAluno @default(ATIVO)
+  inicioEm      DateTime
+  criadoPor     String
+  criadoEm      DateTime    @default(now())
+  atualizadoEm  DateTime    @updatedAt
+
+  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
+  instituicao  Instituicao   @relation(fields: [instituicaoId], references: [id])
+  planos       PlanoRota[]
+  declaracoes  Declaracao[]
+  mensalidades Mensalidade[]
+}
+
+model Veiculo {
+  id           String        @id @default(cuid())
+  placa        String        @unique
+  tipo         TipoVeiculo
+  modelo       String
+  capacidade   Int // > 0 (CHECK na migration)
+  status       StatusVeiculo @default(ATIVO)
+  criadoPor    String
+  criadoEm     DateTime      @default(now())
+  atualizadoEm DateTime      @updatedAt
+
+  rotas    Rota[]
+  viagens  Viagem[]
+  despesas Despesa[]
+}
+
+model Rota {
+  id                  String   @id @default(cuid())
+  nome                String
+  veiculoId           String
+  horarioIda          DateTime @db.Time()
+  horarioVolta        DateTime @db.Time()
+  diasOperacao        Int[] // ISO: 1 = segunda ... 7 = domingo
+  antecedenciaMinutos Int // prazo para declarar
+  valorDiaria         Decimal  @db.Decimal(10, 2) // ida e volta
+  ativa               Boolean  @default(true)
+  criadoPor           String
+  criadoEm            DateTime @default(now())
+  atualizadoEm        DateTime @updatedAt
+
+  veiculo Veiculo     @relation(fields: [veiculoId], references: [id])
+  pontos  RotaPonto[]
+  planos  PlanoRota[]
+  viagens Viagem[]
+}
+
+model Ponto {
+  id            String   @id @default(cuid())
+  descricao     String
+  logradouro    String?
+  numero        String?
+  complemento   String?
+  bairro        String?
+  cidade        String?
+  uf            String?
+  cep           String?
+  referencia    String?
+  instituicaoId String?
+  latitude      Decimal? @db.Decimal(10, 7)
+  longitude     Decimal? @db.Decimal(10, 7)
+  ativo         Boolean  @default(true)
+  criadoPor     String
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+
+  instituicao    Instituicao? @relation(fields: [instituicaoId], references: [id])
+  rotaPontos     RotaPonto[]
+  planosEmbarque PlanoRota[]  @relation("PlanoEmbarque")
+  planosDestino  PlanoRota[]  @relation("PlanoDestino")
+  planosRetorno  PlanoRota[]  @relation("PlanoRetorno")
+}
+
+model RotaPonto {
+  id           String   @id @default(cuid())
+  rotaId       String
+  pontoId      String
+  ordem        Int // posição na ida
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  rota  Rota  @relation(fields: [rotaId], references: [id])
+  ponto Ponto @relation(fields: [pontoId], references: [id])
+
+  @@unique([rotaId, ordem])
+  @@unique([rotaId, pontoId])
+}
+
+model PlanoRota {
+  id              String    @id @default(cuid())
+  alunoId         String
+  rotaId          String
+  pontoEmbarqueId String
+  pontoDestinoId  String
+  pontoRetornoId  String? // nulo = volta ao ponto de embarque
+  diasSemana      Int[] // ISO: 1 = segunda ... 7 = domingo
+  vigenteDe       DateTime
+  vigenteAte      DateTime? // nulo = plano atual
+  criadoPor       String
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+
+  aluno         Aluno    @relation(fields: [alunoId], references: [id])
+  rota          Rota     @relation(fields: [rotaId], references: [id])
+  pontoEmbarque Ponto    @relation("PlanoEmbarque", fields: [pontoEmbarqueId], references: [id])
+  pontoDestino  Ponto    @relation("PlanoDestino", fields: [pontoDestinoId], references: [id])
+  pontoRetorno  Ponto?   @relation("PlanoRetorno", fields: [pontoRetornoId], references: [id])
+  diarias       Diaria[]
+
+  // Índice parcial plano_aberto_unico (alunoId, rotaId) WHERE vigenteAte IS NULL
+  // é adicionado como SQL solto na migration.
+  @@unique([alunoId, rotaId, vigenteDe])
+}
+
+model Viagem {
+  id                 String       @id @default(cuid())
+  rotaId             String
+  veiculoId          String
+  data               DateTime     @db.Date
+  horarioIda         DateTime
+  horarioVolta       DateTime
+  prazoDeclaracao    DateTime
+  capacidade         Int // cópia do veículo
+  status             StatusViagem @default(AGENDADA)
+  motivoCancelamento String?
+  criadoEm           DateTime     @default(now())
+  atualizadoEm       DateTime     @updatedAt
+
+  rota        Rota         @relation(fields: [rotaId], references: [id])
+  veiculo     Veiculo      @relation(fields: [veiculoId], references: [id])
+  declaracoes Declaracao[]
+  diarias     Diaria[]
+
+  @@unique([rotaId, data])
+}
+
+model Declaracao {
+  id           String           @id @default(cuid())
+  viagemId     String
+  alunoId      String
+  usaIda       Boolean
+  usaVolta     Boolean
+  origem       OrigemDeclaracao
+  declaradoEm  DateTime         @default(now())
+  canceladoEm  DateTime?
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+
+  viagem        Viagem         @relation(fields: [viagemId], references: [id])
+  aluno         Aluno          @relation(fields: [alunoId], references: [id])
+  justificativa Justificativa?
+
+  @@unique([viagemId, alunoId])
+}
+
+model Justificativa {
+  id                String              @id @default(cuid())
+  declaracaoId      String              @unique
+  motivo            MotivoJustificativa
+  descricao         String
+  anexoUrl          String // obrigatório, via StorageService
+  status            StatusJustificativa @default(PENDENTE)
+  observacaoDecisao String?
+  decididoPor       String?
+  decididoEm        DateTime?
+  criadoEm          DateTime            @default(now())
+  atualizadoEm      DateTime            @updatedAt
+
+  declaracao Declaracao @relation(fields: [declaracaoId], references: [id])
+  diarias    Diaria[]
+}
+
+model Mensalidade {
+  id                String            @id @default(cuid())
+  alunoId           String
+  competencia       String // AAAA-MM
+  diariasCobradas   Int
+  diariasIsentas    Int
+  subtotal          Decimal           @db.Decimal(10, 2) // soma das diárias COBRADA
+  ajuste            Decimal?          @db.Decimal(10, 2) // pode ser negativo
+  motivoAjuste      String?
+  ajustadoPor       String?
+  ajustadoEm        DateTime?
+  valor             Decimal           @db.Decimal(10, 2) // subtotal + ajuste
+  vencimentoEm      DateTime
+  status            StatusMensalidade @default(ABERTA)
+  pagoEm            DateTime?
+  referenciaGateway String?
+  baixaPor          String?
+  baixaEm           DateTime?
+  criadoEm          DateTime          @default(now())
+  atualizadoEm      DateTime          @updatedAt
+
+  aluno   Aluno    @relation(fields: [alunoId], references: [id])
+  diarias Diaria[]
+
+  @@unique([alunoId, competencia])
+}
+
+model Diaria {
+  id              String         @id @default(cuid())
+  mensalidadeId   String
+  viagemId        String
+  planoRotaId     String? // nulo = diária avulsa
+  data            DateTime       @db.Date
+  valorDiaria     Decimal        @db.Decimal(10, 2) // cópia da rota
+  situacao        SituacaoDiaria
+  justificativaId String?
+  criadoEm        DateTime       @default(now())
+  atualizadoEm    DateTime       @updatedAt
+
+  mensalidade   Mensalidade    @relation(fields: [mensalidadeId], references: [id])
+  viagem        Viagem         @relation(fields: [viagemId], references: [id])
+  planoRota     PlanoRota?     @relation(fields: [planoRotaId], references: [id])
+  justificativa Justificativa? @relation(fields: [justificativaId], references: [id])
+
+  @@unique([mensalidadeId, viagemId])
+}
+
+model Despesa {
+  id             String           @id @default(cuid())
+  veiculoId      String? // nulo = despesa geral
+  categoria      CategoriaDespesa
+  descricao      String
+  valor          Decimal          @db.Decimal(10, 2)
+  data           DateTime         @db.Date
+  comprovanteUrl String?
+  criadoPor      String
+  criadoEm       DateTime         @default(now())
+  atualizadoEm   DateTime         @updatedAt
+
+  veiculo Veiculo? @relation(fields: [veiculoId], references: [id])
 }
