@@ -22,6 +22,7 @@ import {
   TipoVeiculo,
   Turno,
 } from "../lib/generated/prisma/client";
+import { dia, diaSemanaIso, hojeLocal, horaLocal, somarDias, UM_DIA_MS as UM_DIA } from "../lib/datas";
 
 config({ path: ".env.local" });
 
@@ -30,32 +31,7 @@ const prisma = new PrismaClient({
 });
 
 // ---------------------------------------------------------------- Datas
-// O banco guarda tudo em UTC; os horários abaixo são escritos no horário de
-// Brasília (UTC-3, sem horário de verão desde 2019) e convertidos aqui.
-
-const FUSO_HORAS = 3;
-const UM_DIA = 24 * 60 * 60 * 1000;
-
-/** Meia-noite UTC do dia — formato usado nas colunas @db.Date. */
-function dia(ano: number, mes: number, d: number) {
-  return new Date(Date.UTC(ano, mes - 1, d));
-}
-
-function somarDias(data: Date, n: number) {
-  return new Date(data.getTime() + n * UM_DIA);
-}
-
-/** ISO: 1 = segunda ... 7 = domingo. */
-function diaSemanaIso(data: Date) {
-  const d = data.getUTCDay();
-  return d === 0 ? 7 : d;
-}
-
-/** Instante UTC correspondente a "hh:mm" no horário de Brasília daquele dia. */
-function horaLocal(data: Date, hhmm: string) {
-  const [h, m] = hhmm.split(":").map(Number);
-  return new Date(data.getTime() + ((h + FUSO_HORAS) * 60 + m) * 60 * 1000);
-}
+// Os horários abaixo são escritos no horário de Brasília; lib/datas converte.
 
 /** Coluna @db.Time: só a hora importa, a data é descartada pelo Postgres. */
 function horario(hhmm: string) {
@@ -67,10 +43,9 @@ function competenciaDe(data: Date) {
 }
 
 const agora = new Date();
-const localAgora = new Date(agora.getTime() - FUSO_HORAS * 60 * 60 * 1000);
-const ano = localAgora.getUTCFullYear();
-const mes = localAgora.getUTCMonth() + 1;
-const hoje = dia(ano, mes, localAgora.getUTCDate());
+const hoje = hojeLocal(agora);
+const ano = hoje.getUTCFullYear();
+const mes = hoje.getUTCMonth() + 1;
 
 // Date.UTC aceita mês fora de 1..12 e ajusta o ano sozinho.
 const inicioDoMes = (deslocamento: number) => dia(ano, mes + deslocamento, 1);

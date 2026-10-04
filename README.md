@@ -6,6 +6,9 @@ Aplicação **full stack em Next.js** (App Router): a interface usa **React** co
 biblioteca e a API vive no mesmo projeto, em Route Handlers dentro de `app/api/`.
 Não existe servidor Express separado.
 
+**Produção:** https://busaum.vercel.app/ — cada push na `main` publica automaticamente
+(deploy contínuo na Vercel) e cada Pull Request ganha uma URL de preview.
+
 ## Como rodar
 1. Node 22+ (Next 16 exige >= 20.9; se você usa nvm, `nvm use` lê o `.nvmrc`)
 2. `npm install`
