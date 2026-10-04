@@ -8,6 +8,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PerfilUsuario } from "@/lib/generated/prisma/enums";
+import { ErroDeAcesso } from "@/server/comum/erros";
 
 const COOKIE_SESSAO = "busaum_usuario";
 const SETE_DIAS_S = 7 * 24 * 60 * 60;
@@ -39,6 +40,19 @@ export async function obterUsuarioAtual(): Promise<UsuarioSessao | null> {
 export async function exigirPerfil(perfil: PerfilUsuario): Promise<UsuarioSessao> {
   const usuario = await obterUsuarioAtual();
   if (!usuario || usuario.perfil !== perfil) redirect("/login");
+  return usuario;
+}
+
+/**
+ * Versão para Route Handlers: em vez de redirecionar, lança ErroDeAcesso (403).
+ * A checagem se repete aqui, e não só no layout, porque a API pode ser chamada
+ * direto, sem passar por nenhuma página.
+ */
+export async function exigirPerfilNaApi(perfil: PerfilUsuario): Promise<UsuarioSessao> {
+  const usuario = await obterUsuarioAtual();
+  if (!usuario || usuario.perfil !== perfil) {
+    throw new ErroDeAcesso("Você não tem permissão para esta operação.");
+  }
   return usuario;
 }
 

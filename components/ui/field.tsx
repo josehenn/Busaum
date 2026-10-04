@@ -100,8 +100,13 @@ function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
 
 function FieldLabel({
   className,
+  obrigatorio,
+  children,
   ...props
-}: React.ComponentProps<typeof Label>) {
+}: React.ComponentProps<typeof Label> & {
+  /** Mostra o asterisco vermelho de campo obrigatório (ajuste do projeto). */
+  obrigatorio?: boolean
+}) {
   return (
     <Label
       data-slot="field-label"
@@ -111,7 +116,14 @@ function FieldLabel({
         className
       )}
       {...props}
-    />
+    >
+      {children}
+      {obrigatorio && (
+        <span aria-hidden="true" className="-ml-1 text-destructive">
+          *
+        </span>
+      )}
+    </Label>
   )
 }
 
