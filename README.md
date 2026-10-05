@@ -11,7 +11,7 @@ O projeto foi desenvolvido para a disciplina de **Programação 4**, com foco na
 ## 🎥 Vídeo de apresentação
 
 > **Assista ao vídeo de apresentação do projeto:**  
-> 🔗 **[LINK DO VÍDEO — INSERIR AQUI]**
+> 🔗 **https://www.youtube.com/watch?v=w2vlQzIb-DE**
 
 No vídeo apresentamos a aplicação em funcionamento e demonstramos os principais **Design Patterns utilizados no desenvolvimento do BUSAUM**, relacionando cada padrão com sua aplicação prática no sistema.
 
